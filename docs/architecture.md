@@ -20,6 +20,39 @@ flowchart LR
     A1 --> M
 ```
 
+## Fortified runtime
+
+```mermaid
+flowchart LR
+    I["Fixture inbound"] --> X["Deterministic identity, duplicate, injection and account gates"]
+    X -->|"queued only"| R["Google ADK Runner"]
+    R --> L["Gemini extraction"]
+    L --> F["score_priority FunctionTool"]
+    F --> D["Deterministic priority state"]
+    R --> S["Session Service + Memory Service"]
+    R --> P["SecurityPlugin + shared authority policy"]
+    D --> A["OTel + JSON + CSV audit"]
+    U["10 Unit definitions"] --> G["Generated local Registry"]
+    G --> R
+    G --> UI["Control room + Unit drawers"]
+    C["Optimistic capacity versions"] --> UI
+```
+
+The LLM is deliberately outside every authority boundary. It extracts language
+features and requests a tool call; server state supplies the priority and policy
+result. `external_write` is false at the tool, session, audit, HTTP, and UI
+boundaries.
+
+Local Session and Memory services make the full workflow reproducible without a
+cloud account. Vertex services are selected only with complete project,
+location, Agent Engine ID, and Application Default Credentials. Partial cloud
+configuration fails closed.
+
+The registry generator projects the canonical Unit list into identical frontend
+and agent JSON. Google ADK 2.0's Cloud Agent Registry client is used as an
+optional read/query adapter; publishing lifecycle resources remains an explicit
+cloud deployment step and is not simulated locally.
+
 ## Shared core contracts
 
 | Core component | Input | Output | Hard rule |

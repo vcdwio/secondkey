@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — Product identity
+
+- Renamed the product to **Verge AI - The Fortified Enterprise Fleet**.
+- Kept Verge Consulting as the fictional demo tenant and ContextOps as the shared internal operating architecture.
+- Replaced the prewritten capacity answer with deterministic `allocateCapacity()` rules: priority, SLA, skill coverage, available hours, movable blocks and switching cost.
+- Added four allocation tests, including 100 identical runs, the real 12-hour pack outcome and an honest reduced-staff shortfall.
+- Added optimistic capacity reservations with per-staff versions, deterministic IDs, conflict/shortfall responses, release, reset, and 1,000 seeded concurrency checks.
+- Replaced direct Gemini wiring with a Google ADK `Runner`, forced `FunctionTool`, Session/Memory services, and a pre-tool `SecurityPlugin` backed by the same authority matrix as the UI.
+- Added a synchronized ten-Unit registry, optional Cloud discovery adapter, OTel audit spans, safe JSON/CSV audit exports, and complete HTTP endpoints.
+- Added Cloud Run container/source configuration, cross-origin frontend health wiring, and a no-claims submission/deployment checklist.
+
 ## 0.2.0 — 2026-08-22 · Governed demo
 
 The first build looked right but was mostly static. This one runs the rules.
@@ -40,4 +51,4 @@ The first build looked right but was mostly static. This one runs the rules.
 - Audit trail is complete, scrollable and exportable as JSON with actor and evidence on every event.
 
 ### Tests
-- 22 automated tests (was 12): added `tests/governance.test.mjs` covering derived priorities, authority limits, execution holds, rollback, idempotency, ROI arithmetic and drill coverage.
+- 26 automated tests (was 12): governance coverage plus deterministic capacity allocation, reduced-staff shortfall, execution holds, rollback, idempotency, ROI arithmetic and drill coverage.

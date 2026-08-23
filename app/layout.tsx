@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Verge ContextOps — Unit Platform",
-  description: "Ten business Units. One evidence-backed operating core.",
+  title: "Verge AI - The Fortified Enterprise Fleet",
+  description: "Ten business Units. One fortified, evidence-backed operating core.",
   icons: { icon: "/favicon.svg" },
 };
 

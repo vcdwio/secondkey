@@ -1,4 +1,5 @@
 import model from "./generated/portfolio.json" with { type: "json" };
+import registry from "./generated/registry.json" with { type: "json" };
 import { calculateConfidence, scoreIncident } from "./engine.ts";
 import type { ConfidenceSignals, IncidentSignals, Priority } from "./types.ts";
 
@@ -7,6 +8,8 @@ import type { ConfidenceSignals, IncidentSignals, Priority } from "./types.ts";
  * from the Verge data pack by `npm run data` — nothing is typed in by hand.
  */
 export const PORTFOLIO = model;
+export const UNIT_REGISTRY = registry;
+export type UnitRegistryEntry = (typeof registry)[number];
 
 export type QueueItem = (typeof model.incidents)[number];
 

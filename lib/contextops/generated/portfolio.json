@@ -630,7 +630,8 @@
           "fromProject": "PJ-INT-01",
           "fromProjectName": "ContextOps Advisory Accelerator",
           "hours": 4,
-          "role": "incident lead",
+          "role": "60% required-skill match; 4h released after free capacity was exhausted.",
+          "skillMatch": 0.6,
           "skills": [
             "operations",
             "data_analysis",
@@ -645,7 +646,8 @@
           "fromProject": "PJ-INT-01",
           "fromProjectName": "ContextOps Advisory Accelerator",
           "hours": 3,
-          "role": "data reconciliation and evidence pack",
+          "role": "40% required-skill match; 3h released after free capacity was exhausted.",
+          "skillMatch": 0.4,
           "skills": [
             "market_research",
             "competitive_intelligence",
@@ -834,38 +836,50 @@
       },
       "allocation": [
         {
-          "staffId": "VC-008",
-          "name": "Hannah Wu",
-          "initials": "HW",
-          "fromProject": "PJ-MH-01",
-          "fromProjectName": "Returns Reduction Sprint",
-          "hours": 2,
-          "role": "facilitator briefing; Morrow analysis resumes at 13:00",
-          "skills": [
-            "process_mapping",
-            "customer_operations",
-            "ecommerce"
-          ],
-          "availableHours": 4
-        },
-        {
           "staffId": "VC-010",
           "name": "Grace Miller",
           "initials": "GM",
           "fromProject": "PJ-EL-01",
           "fromProjectName": "Enterprise Cohort Launch",
           "hours": 3,
-          "role": "replacement and logistics coordination",
+          "role": "60% required-skill match; 3h released after free capacity was exhausted.",
+          "skillMatch": 0.6,
           "skills": [
             "scheduling",
             "vendor_coordination",
             "meeting_operations"
           ],
           "availableHours": 5
+        },
+        {
+          "staffId": "VC-008",
+          "name": "Hannah Wu",
+          "initials": "HW",
+          "fromProject": "PJ-MH-01",
+          "fromProjectName": "Returns Reduction Sprint",
+          "hours": 2,
+          "role": "40% required-skill match; 2h released after free capacity was exhausted.",
+          "skillMatch": 0.4,
+          "skills": [
+            "process_mapping",
+            "customer_operations",
+            "ecommerce"
+          ],
+          "availableHours": 4
         }
       ],
-      "released": [],
-      "releasedHours": 0,
+      "released": [
+        {
+          "staffId": "VC-010",
+          "name": "Grace Miller",
+          "initials": "GM",
+          "hours": 3,
+          "toProject": "PJ-EL-01",
+          "toProjectName": "Enterprise Cohort Launch",
+          "role": "60% required-skill match; 3h released after free capacity was exhausted."
+        }
+      ],
+      "releasedHours": 3,
       "proposedHours": 5,
       "openTickets": 1,
       "evalScenarios": [
@@ -1110,7 +1124,7 @@
           "hours": 2,
           "toProject": "PJ-EL-01",
           "toProjectName": "Enterprise Cohort Launch",
-          "role": "facilitator briefing; Morrow analysis resumes at 13:00"
+          "role": "40% required-skill match; 2h released after free capacity was exhausted."
         }
       ],
       "releasedHours": 2,
@@ -1257,7 +1271,7 @@
           "hours": 4,
           "toProject": "PJ-BH-01",
           "toProjectName": "Control Tower Stabilisation",
-          "role": "incident lead"
+          "role": "60% required-skill match; 4h released after free capacity was exhausted."
         },
         {
           "staffId": "VC-009",
@@ -1266,7 +1280,7 @@
           "hours": 3,
           "toProject": "PJ-BH-01",
           "toProjectName": "Control Tower Stabilisation",
-          "role": "data reconciliation and evidence pack"
+          "role": "40% required-skill match; 3h released after free capacity was exhausted."
         }
       ],
       "proposedHours": -7,
@@ -1382,7 +1396,9 @@
     "totalAvailableHours": 34,
     "movableHours": 14,
     "switchingCostHours": 2.3,
-    "proposedHours": 12
+    "proposedHours": 12,
+    "allocationMethod": "deterministic_priority_sla_skill_capacity",
+    "unmet": []
   },
   "approval": {
     "id": "VC-APR-001",

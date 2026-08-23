@@ -1,4 +1,4 @@
-# Verge ContextOps Unit Platform — Product Spec
+# Verge AI - The Fortified Enterprise Fleet — Product Spec
 
 ## Product outcome
 

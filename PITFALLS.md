@@ -9,6 +9,11 @@
 - Do not present model self-reported confidence as calibrated confidence.
 - Do not mix records across the seven fictional client accounts.
 - Do not treat the 12 proposed staff-hours as an executed allocation; the data pack keeps the packet awaiting approval.
+- Do not replay `scenario.resource_changes` in production code. Capacity proposals must come from `allocateCapacity()`; fixtures may only assert the expected result.
+- Do not use `GEMINI_API_KEY` as Vertex Agent Engine state authentication. Google ADK 2.0 requires Application Default Credentials for its Vertex session and memory implementations.
+- Do not claim Cloud Agent Registry publication: the ADK 2.0 TypeScript client in this build supports discovery/query, while the synchronized local registry is the implemented catalog.
+- Do not expose raw backend errors through HTTP; credential-bearing providers must fail behind stable, sanitized responses.
+- Do not export user-controlled CSV cells beginning with `=`, `+`, `-`, or `@` without neutralizing spreadsheet formulas.
 
 ## Demo credibility — learned the hard way
 - A number typed into JSX is a number a prospect will ask about. Everything visible now comes from `npm run data`; if it cannot be derived from the pack, it does not belong on screen.
@@ -23,6 +28,9 @@
 - `node_modules` here is platform-bound (rolldown ships a native binding). Moving the folder between macOS and Linux breaks `npm run build`; reinstall after switching platform.
 - `rendered-html.test.mjs` matches literal strings in server HTML. React inserts `<!-- -->` between an interpolation and adjacent text, so write `{`${n} regression scenarios`}` rather than `{n} regression scenarios` wherever a test matches that text.
 - Relative TypeScript imports in `lib/` need the `.ts` extension for `node --test` to strip types; `allowImportingTsExtensions` is enabled in tsconfig to keep `tsc --noEmit` agreeing with it.
+- The ADK package used here requires Node 24.13 or newer. The Cloud Run Docker image pins Node 24.18 so source and container builds use a compatible runtime.
+- A Dockerfile is not container proof. This verification host has neither Docker nor gcloud installed; keep deployment marked pending until another machine builds the image and verifies `/healthz` on Cloud Run.
 - Scrollable containers need `tabIndex={0}` for axe (`scrollable-region-focusable`); pair it with `role="region"` and a label so `jsx-a11y/no-noninteractive-tabindex` stays satisfied.
 - `worker/index.ts` referenced two Cloudflare globals (`Fetcher`, `D1Database`) that no installed package declares, so `tsc --noEmit` failed on them. Fixed with local declarations in `worker/cloudflare.d.ts`; swap in `@cloudflare/workers-types` if the worker ever needs the full runtime surface.
 - The Cowork device mount refuses to overwrite an existing file, so `tar xzf` into the project reports `Cannot open: File exists` and silently lands only the *new* files — leaving a half-old, half-new tree that looks like the change never happened. Extract to a temp directory and write each file through with `cat src > dest` (truncate is permitted, unlink is not).
+- Git works through the Cowork device mount but leaves litter: the mount forbids `unlink`, so every operation abandons a `.git/*.lock` file and stray `.git/objects/**/tmp_obj_*` blobs, and the *next* git command then fails with "Unable to create index.lock: File exists". `rename` is permitted, so `mv .git/index.lock .git/index.lock.stale` unblocks it. Run git from a normal macOS terminal instead; use the mount only when there is no alternative, and never run `git gc` there.

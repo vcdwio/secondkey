@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApprovalWorkbench, type ApprovalState } from "@/components/approval-workbench";
 import { AuditPanel } from "@/components/audit-panel";
 import { ConnectorSummaryCard, IoMapCard } from "@/components/blueprint-cards";
@@ -17,12 +17,14 @@ import {
   simulateExecution,
   type ExecutionResult,
 } from "@/lib/contextops/engine";
+import { createCapacityReservationStore } from "@/lib/contextops/capacity";
 import {
   AUD,
   CONFIDENCE_WEIGHTS,
   DECISION_SCOPE,
   PORTFOLIO,
   PORTFOLIO_CONFIDENCE,
+  UNIT_REGISTRY,
   pct,
   visibleQueue,
 } from "@/lib/contextops/portfolio";
@@ -30,6 +32,14 @@ import { BUSINESS_UNITS } from "@/lib/contextops/units";
 import type { AuditEvent, BusinessUnitId, ConfidenceSignals } from "@/lib/contextops/types";
 
 const CORE_STEPS = ["Trigger", "Manager", "Context Quality", "Decision", "Approval", "Execution", "Audit / Eval"];
+const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL?.replace(/\/$/, "");
+
+const CAPACITY_SEEDS = PORTFOLIO.incidents.flatMap((incident) =>
+  incident.allocation.map((allocation) => ({
+    staffId: allocation.staffId,
+    availableHours: allocation.hours,
+  })),
+);
 
 const VIEWS = [
   { id: "brief", label: "Daily Brief" },
@@ -100,13 +110,45 @@ export function ContextOpsControlRoom() {
     simulateExecution(PORTFOLIO.executionPlan, { taskId: PORTFOLIO.taskId, approved: false }),
   );
   const [rolledBack, setRolledBack] = useState(false);
+  const capacityStore = useRef(createCapacityReservationStore(CAPACITY_SEEDS));
+  const capacityReservations = useRef<string[]>([]);
+  const [capacityLock, setCapacityLock] = useState<{
+    status: "available" | "reserved" | "released" | "conflict";
+    version: number;
+  }>({ status: "available", version: 1 });
   const [events, setEvents] = useState<AuditEvent[]>(SEED_EVENTS);
+  const [agentRuntime, setAgentRuntime] = useState(
+    AGENT_URL ? "Google ADK runtime · checking" : "Google ADK runtime · local endpoint",
+  );
 
   const profile = AUTHORITY_MATRIX[role] ?? AUTHORITY_MATRIX.Consultant;
   const verdict = evaluateAuthority(role, DECISION_SCOPE);
   const queue = useMemo(() => visibleQueue(profile.queueLimit, profile.clientCount), [profile]);
   const selected = queue.find((entry) => entry.item.id === selectedId) ?? queue[0];
   const activeUnit = BUSINESS_UNITS.find((unit) => unit.id === selectedUnit) ?? BUSINESS_UNITS[0];
+  const activeRegistry = UNIT_REGISTRY.find((entry) => entry.id === activeUnit.id) ?? UNIT_REGISTRY[0];
+  const capacityLockLabel = `capacity ${capacityLock.status} · optimistic lock v${capacityLock.version}`;
+  const registryLabel = `Registry v${activeRegistry.version} · cross-department discoverable`;
+
+  useEffect(() => {
+    if (!AGENT_URL) return;
+    const controller = new AbortController();
+    fetch(`${AGENT_URL}/healthz`, { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Agent health unavailable");
+        const body = await response.json() as { status?: string; external_write?: boolean };
+        if (body.status !== "ok" || body.external_write !== false) {
+          throw new Error("Agent health boundary invalid");
+        }
+        setAgentRuntime("Google ADK runtime · ready · writes disabled");
+      })
+      .catch((error: unknown) => {
+        if (!(error instanceof DOMException && error.name === "AbortError")) {
+          setAgentRuntime("Google ADK runtime · unavailable · workflow held");
+        }
+      });
+    return () => controller.abort();
+  }, []);
 
   const addEvent = useCallback(
     (event: Omit<AuditEvent, "id" | "time">) => {
@@ -162,12 +204,41 @@ export function ContextOpsControlRoom() {
   }
 
   function approveDecision(comment: string) {
+    const reservationIds: string[] = [];
+    const versions: number[] = [];
+    for (const seed of CAPACITY_SEEDS) {
+      const current = capacityStore.current.getCapacityState(seed.staffId);
+      const reservation = capacityStore.current.reserveCapacity({
+        staffId: seed.staffId,
+        hours: seed.availableHours,
+        taskId: PORTFOLIO.taskId,
+        version: current.version,
+      });
+      if (!reservation.ok) {
+        for (const reservationId of reservationIds) {
+          capacityStore.current.releaseReservation(reservationId);
+        }
+        setCapacityLock({ status: "conflict", version: reservation.currentVersion });
+        addEvent({
+          component: "Capacity Lock",
+          message: `Approval stopped: ${reservation.reason}; capacity was not oversold.`,
+          status: "blocked",
+          actor: `${profile.name} · ${role}`,
+          evidence: [PORTFOLIO.taskId],
+        });
+        return;
+      }
+      reservationIds.push(reservation.reservationId);
+      versions.push(reservation.newVersion);
+    }
+    capacityReservations.current = reservationIds;
+    setCapacityLock({ status: "reserved", version: Math.max(...versions, 2) });
     setApprovalState("approved");
     setRolledBack(false);
     setExecution(simulateExecution(PORTFOLIO.executionPlan, { taskId: PORTFOLIO.taskId, approved: true }));
     addEvent({
       component: "Approval",
-      message: `Approved ${PORTFOLIO.executionPlan.length} changes${comment.trim() ? ` — "${comment.trim()}"` : ""}. Simulated only; external_write stayed false.`,
+      message: `Approved ${PORTFOLIO.executionPlan.length} changes and reserved ${PORTFOLIO.capacitySummary.proposedHours}h with optimistic locks${comment.trim() ? ` — "${comment.trim()}"` : ""}. Simulated only; external_write stayed false.`,
       status: "passed",
       actor: `${profile.name} · ${role}`,
       evidence: [PORTFOLIO.approval.id],
@@ -199,6 +270,11 @@ export function ContextOpsControlRoom() {
   }
 
   function rollback() {
+    for (const reservationId of capacityReservations.current) {
+      capacityStore.current.releaseReservation(reservationId);
+    }
+    capacityReservations.current = [];
+    setCapacityLock({ status: "released", version: 3 });
     setExecution((results) => rollbackExecution(results));
     setRolledBack(true);
     addEvent({
@@ -211,6 +287,9 @@ export function ContextOpsControlRoom() {
   }
 
   function resetDemo() {
+    capacityStore.current.reset(CAPACITY_SEEDS);
+    capacityReservations.current = [];
+    setCapacityLock({ status: "available", version: 1 });
     setView("brief");
     setRole("General Manager");
     setSelectedId(PORTFOLIO.incidents[0].id);
@@ -266,8 +345,8 @@ export function ContextOpsControlRoom() {
             V
           </div>
           <div>
-            <strong>Verge</strong>
-            <span>ContextOps</span>
+            <strong>Verge AI</strong>
+            <span>The Fortified Enterprise Fleet</span>
           </div>
         </div>
 
@@ -296,6 +375,8 @@ export function ContextOpsControlRoom() {
             </button>
           </div>
           <p>External writes disabled</p>
+          <p>{capacityLockLabel}</p>
+          <p>{agentRuntime}</p>
         </div>
 
         <label className="role-picker">
@@ -446,6 +527,7 @@ export function ContextOpsControlRoom() {
                   <strong>{activeUnit.name}</strong>
                 </div>
                 <p>{activeUnit.outcome}</p>
+                <span className="chip pass">{registryLabel}</span>
                 <button className="ghost-button" onClick={() => setInspectorOpen(true)}>
                   Open contract
                 </button>
@@ -510,6 +592,8 @@ export function ContextOpsControlRoom() {
               approved={approvalState === "approved"}
               onRollback={rollback}
               rolledBack={rolledBack}
+              capacityStatus={capacityLock.status}
+              capacityLockVersion={capacityLock.version}
             />
           </>
         )}
@@ -579,6 +663,7 @@ export function ContextOpsControlRoom() {
 
       <UnitInspector
         unit={activeUnit}
+        registry={activeRegistry}
         open={inspectorOpen}
         result={unitResults[activeUnit.id]}
         onClose={() => setInspectorOpen(false)}
