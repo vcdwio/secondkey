@@ -1,0 +1,11 @@
+staff_id,name,role,manager_id,email,location,skills,access_level,weekly_capacity_hours,booked_hours,available_hours_2026_08_17,approval_limit_aud
+VC-001,Olivia Mercer,General Manager,,olivia.mercer@vergeconsulting.example,Sydney,executive_decision|commercial|client_escalation|resource_approval,executive,40,35,2,100000
+VC-002,Daniel Cho,Product & Solutions Manager,VC-001,daniel.cho@vergeconsulting.example,Sydney,product_strategy|ai_workflows|solution_design|service_productisation,leadership,40,36,2,10000
+VC-003,Priya Nair,Head of Client Services,VC-001,priya.nair@vergeconsulting.example,Melbourne,client_success|renewal_risk|escalation|account_governance,leadership,40,34,3,25000
+VC-004,Emma Collins,Senior Account Manager,VC-003,emma.collins@vergeconsulting.example,Sydney,account_management|stakeholder_communication|ecommerce|logistics|wholesale,client_portfolio_a,40,37,2,5000
+VC-005,Lucas Bennett,Account Manager,VC-003,lucas.bennett@vergeconsulting.example,Brisbane,account_management|training|sales_operations|service_operations|professional_services,client_portfolio_b,40,35,3,2500
+VC-006,Sofia Patel,Delivery & Resource Manager,VC-001,sofia.patel@vergeconsulting.example,Sydney,resource_planning|project_delivery|risk_management|capacity_management,delivery_all,40,37,2,5000
+VC-007,Marcus Reed,Senior Consultant,VC-006,marcus.reed@vergeconsulting.example,Sydney,operations|data_analysis|logistics|process_design|executive_workshops,delivery_assigned,40,30,6,0
+VC-008,Hannah Wu,Consultant / Process Analyst,VC-006,hannah.wu@vergeconsulting.example,Melbourne,process_mapping|customer_operations|ecommerce|training_operations|analytics,delivery_assigned,40,32,4,0
+VC-009,Noah Kim,Research Analyst,VC-002,noah.kim@vergeconsulting.example,Sydney,market_research|competitive_intelligence|quantitative_analysis|sales_operations|retail,research_assigned,40,29,5,0
+VC-010,Grace Miller,Operations Coordinator,VC-006,grace.miller@vergeconsulting.example,Sydney,scheduling|vendor_coordination|meeting_operations|document_control|training_logistics,operations,38,30,5,1000

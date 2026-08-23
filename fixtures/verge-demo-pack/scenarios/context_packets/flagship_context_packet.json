@@ -1,0 +1,82 @@
+{
+  "mode": "demo",
+  "task_id": "DEMO-PORTFOLIO-001",
+  "generated_at": "2026-08-17T08:35:00+10:00",
+  "decision_scope": "Verge Consulting Monday cross-client allocation",
+  "verified_facts": [
+    {
+      "fact": "BlueHarbor executive preview is 18 Aug at 16:00 and production launch is 19 Aug at 17:00.",
+      "sources": [
+        "MT-BH-01",
+        "EM-001"
+      ],
+      "authority": "latest_project_governance"
+    },
+    {
+      "fact": "BlueHarbor production credentials expire 18 Aug at 18:00 and rotation is unresolved.",
+      "sources": [
+        "EM-003",
+        "TK-BH-102"
+      ],
+      "authority": "project_owner"
+    },
+    {
+      "fact": "Elevate workshop begins 18 Aug at 09:00 for 85 attendees and lead facilitator is unavailable.",
+      "sources": [
+        "EM-005",
+        "MT-EL-01",
+        "CALL-EL-01"
+      ],
+      "authority": "client_confirmed"
+    },
+    {
+      "fact": "Morrow returns reached 18 percent versus an 8 percent baseline after a packaging change.",
+      "sources": [
+        "EM-008",
+        "EM-009",
+        "EM-026"
+      ],
+      "authority": "client_confirmed"
+    },
+    {
+      "fact": "Marcus and Noah each have movable internal accelerator blocks on 17 Aug.",
+      "sources": [
+        "CAP-001",
+        "CAP-002",
+        "EM-019"
+      ],
+      "authority": "internal_resource_plan"
+    }
+  ],
+  "conflicts": [
+    {
+      "topic": "BlueHarbor launch date",
+      "old_source": "EM-004",
+      "current_source": "MT-BH-01",
+      "resolution": "Use Wednesday production launch; Tuesday is preview only."
+    },
+    {
+      "topic": "Field & Found inventory",
+      "old_source": "EM-029",
+      "current_source": "EM-016",
+      "resolution": "Prefer Sunday warehouse count, then reconcile."
+    }
+  ],
+  "missing_information": [
+    "Final confirmation from BlueHarbor credential vendor",
+    "Final acceptance from Elevate backup facilitator"
+  ],
+  "allowed_actions": [
+    "draft_client_email",
+    "create_internal_task",
+    "propose_calendar_change",
+    "prepare_crm_update"
+  ],
+  "forbidden_actions": [
+    "send_external_email",
+    "commit_spend",
+    "change_client_deadline",
+    "share_cross_account_data"
+  ],
+  "external_write": false
+}

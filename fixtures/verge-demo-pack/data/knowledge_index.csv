@@ -1,0 +1,8 @@
+id,file,title,version,status,authority,updated_at
+KB-001,VC_Priority_and_SLA_Policy_v3.md,Priority and SLA Policy,3,active,policy,2026-08-01
+KB-002,VC_Resource_Allocation_Policy_v2.md,Resource Allocation Policy,2,active,policy,2026-07-15
+KB-003,VC_Approval_and_External_Write_Policy_v4.md,Approval and External Write Policy,4,active,policy,2026-08-05
+KB-004,VC_Client_Communication_Standard_v2.md,Client Communication Standard,2,active,standard,2026-07-20
+KB-005,VC_Data_Access_and_Confidentiality_v1.md,Data Access and Confidentiality,1,active,policy,2026-08-10
+KB-006,VC_Output_Quality_Standard_v1.md,Output Quality Standard,1,active,standard,2026-08-12
+KB-OLD-001,VC_Priority_and_SLA_Policy_v2_ARCHIVED.md,Priority and SLA Policy,2,archived,superseded_policy,2026-04-01

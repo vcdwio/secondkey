@@ -1,0 +1,223 @@
+[
+  {
+    "meeting_id": "MT-BH-01",
+    "date": "2026-08-14T14:00:00+10:00",
+    "client_id": "CL-BH",
+    "project_id": "PJ-BH-01",
+    "title": "BlueHarbor steering committee",
+    "participants": [
+      "CT-BH-01",
+      "CT-BH-02",
+      "VC-004",
+      "VC-007"
+    ],
+    "decisions": [
+      "Executive preview is Tuesday 18 Aug at 16:00.",
+      "Production launch is Wednesday 19 Aug at 17:00, superseding the old Tuesday go-live."
+    ],
+    "open_risks": [
+      "Production credential rotation is not confirmed.",
+      "ETA feed reconciliation has no named owner."
+    ],
+    "actions": [
+      {
+        "owner": "VC-007",
+        "action": "Confirm credential rotation and feed owner",
+        "due": "2026-08-17T10:00:00+10:00"
+      }
+    ],
+    "authority": "latest_steering_record"
+  },
+  {
+    "meeting_id": "MT-EL-01",
+    "date": "2026-08-12T13:00:00+10:00",
+    "client_id": "CL-EL",
+    "project_id": "PJ-EL-01",
+    "title": "Enterprise workshop readiness",
+    "participants": [
+      "CT-EL-01",
+      "CT-EL-02",
+      "VC-005",
+      "VC-010"
+    ],
+    "decisions": [
+      "Attendance locked at 85.",
+      "Workshop begins Tuesday 18 Aug at 09:00."
+    ],
+    "open_risks": [
+      "No fully briefed backup facilitator."
+    ],
+    "actions": [
+      {
+        "owner": "VC-010",
+        "action": "Prepare backup facilitator pack",
+        "due": "2026-08-14T17:00:00+10:00"
+      }
+    ],
+    "authority": "project_governance"
+  },
+  {
+    "meeting_id": "MT-MH-01",
+    "date": "2026-08-13T11:00:00+10:00",
+    "client_id": "CL-MH",
+    "project_id": "PJ-MH-01",
+    "title": "Returns diagnostic checkpoint",
+    "participants": [
+      "CT-MH-01",
+      "CT-MH-02",
+      "VC-004",
+      "VC-008"
+    ],
+    "decisions": [
+      "Separate sizing and packaging damage causes.",
+      "Do not automatically pause media spend without a quantified recommendation."
+    ],
+    "open_risks": [
+      "Packaging material changed on 3 Aug."
+    ],
+    "actions": [
+      {
+        "owner": "VC-008",
+        "action": "Prepare cause split",
+        "due": "2026-08-18T12:00:00+10:00"
+      }
+    ],
+    "authority": "project_governance"
+  },
+  {
+    "meeting_id": "MT-PR-01",
+    "date": "2026-08-11T15:00:00+10:00",
+    "client_id": "CL-PR",
+    "project_id": "PJ-PR-01",
+    "title": "Pipeline diagnostic discovery",
+    "participants": [
+      "CT-PR-01",
+      "CT-PR-02",
+      "VC-005",
+      "VC-009"
+    ],
+    "decisions": [
+      "Use conversion quality, not activity volume, as the primary lens."
+    ],
+    "open_risks": [
+      "Discovery-to-proposal conversion fell materially."
+    ],
+    "actions": [
+      {
+        "owner": "VC-009",
+        "action": "Review stage conversion export",
+        "due": "2026-08-18T15:00:00+10:00"
+      }
+    ],
+    "authority": "project_governance"
+  },
+  {
+    "meeting_id": "MT-CS-01",
+    "date": "2026-08-10T10:30:00+10:00",
+    "client_id": "CL-CS",
+    "project_id": "PJ-CS-01",
+    "title": "Dispatch process workshop",
+    "participants": [
+      "CT-CS-01",
+      "CT-CS-02",
+      "VC-005",
+      "VC-008"
+    ],
+    "decisions": [
+      "Separate access-wait from technician-wait jobs."
+    ],
+    "open_risks": [
+      "Backlog reporting currently combines both causes."
+    ],
+    "actions": [
+      {
+        "owner": "VC-008",
+        "action": "Create triage segmentation",
+        "due": "2026-08-21T10:00:00+10:00"
+      }
+    ],
+    "authority": "project_governance"
+  },
+  {
+    "meeting_id": "MT-FF-01",
+    "date": "2026-08-14T09:00:00+10:00",
+    "client_id": "CL-FF",
+    "project_id": "PJ-FF-01",
+    "title": "Promotion readiness",
+    "participants": [
+      "CT-FF-01",
+      "CT-FF-02",
+      "VC-004",
+      "VC-009"
+    ],
+    "decisions": [
+      "Final scope decision is due Thursday 20 Aug at noon."
+    ],
+    "open_risks": [
+      "Supplier snapshot may be stale.",
+      "Four hero SKUs drive most margin."
+    ],
+    "actions": [
+      {
+        "owner": "VC-009",
+        "action": "Reconcile latest warehouse count",
+        "due": "2026-08-18T12:00:00+10:00"
+      }
+    ],
+    "authority": "project_governance"
+  },
+  {
+    "meeting_id": "MT-LP-01",
+    "date": "2026-08-13T16:00:00+10:00",
+    "client_id": "CL-LP",
+    "project_id": "PJ-LP-01",
+    "title": "Onboarding workflow review",
+    "participants": [
+      "CT-LP-01",
+      "CT-LP-02",
+      "VC-005",
+      "VC-008"
+    ],
+    "decisions": [
+      "Scope is operational workflow only.",
+      "No tax, audit, legal or accounting advice is in scope."
+    ],
+    "open_risks": [],
+    "actions": [
+      {
+        "owner": "VC-008",
+        "action": "Add day-three document reminder",
+        "due": "2026-08-21T17:00:00+10:00"
+      }
+    ],
+    "authority": "project_governance"
+  },
+  {
+    "meeting_id": "MT-INT-01",
+    "date": "2026-08-17T09:00:00+10:00",
+    "client_id": "INTERNAL",
+    "project_id": "PJ-INT-01",
+    "title": "Monday portfolio allocation review",
+    "participants": [
+      "VC-001",
+      "VC-002",
+      "VC-003",
+      "VC-006"
+    ],
+    "decisions": [
+      "Prepare a single cross-client decision packet.",
+      "Do not execute external writes until GM approval."
+    ],
+    "open_risks": [
+      "Reallocation above eight staff hours affects the internal accelerator."
+    ],
+    "actions": [
+      {
+        "owner": "VC-006",
+        "action": "Submit resource allocation proposal",
+        "due": "2026-08-17T09:20:00+10:00"
+      }
+    ],
+    "authority": "leadership_governance"
+  }
+]

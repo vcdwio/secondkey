@@ -1,0 +1,10 @@
+ticket_id,client_id,project_id,opened_at,title,description,reported_priority,expected_priority,status,owner_staff_id,sla_due
+TK-BH-101,CL-BH,PJ-BH-01,2026-08-17T07:42:00+10:00,Executive dashboard shows incorrect ETA values,Five priority shipments show stale ETA values; executive preview is tomorrow at 16:00.,urgent,P0,new,,2026-08-17T09:42:00+10:00
+TK-BH-102,CL-BH,PJ-BH-01,2026-08-14T16:10:00+10:00,API credential rotation unresolved,Production credentials expire before Wednesday launch.,high,P0,open,VC-007,2026-08-17T10:00:00+10:00
+TK-EL-201,CL-EL,PJ-EL-01,2026-08-17T06:55:00+10:00,Lead facilitator unavailable,Lead facilitator is ill for the 85-person workshop tomorrow morning.,urgent,P0,new,VC-010,2026-08-17T10:55:00+10:00
+TK-MH-301,CL-MH,PJ-MH-01,2026-08-16T18:20:00+10:00,Returns rate reached 18 percent,Returns doubled from the 8 percent baseline while campaign expansion remains scheduled.,high,P1,new,VC-008,2026-08-17T12:20:00+10:00
+TK-PR-401,CL-PR,PJ-PR-01,2026-08-17T08:01:00+10:00,Pipeline diagnostic requested by Tuesday 15:00,CRO needs an initial diagnosis for board preparation.,high,P1,new,VC-009,2026-08-17T14:01:00+10:00
+TK-CS-501,CL-CS,PJ-CS-01,2026-08-14T15:30:00+10:00,Field service backlog at 37 jobs,Dispatch backlog needs a recommendation before Friday board review.,medium,P1,open,VC-008,2026-08-17T11:30:00+10:00
+TK-FF-601,CL-FF,PJ-FF-01,2026-08-17T07:58:00+10:00,Twelve promoted SKUs show inventory mismatch,Promotion launches Thursday; supplier file and warehouse count disagree.,high,P1,new,VC-009,2026-08-17T15:58:00+10:00
+TK-LP-701,CL-LP,PJ-LP-01,2026-08-17T08:12:00+10:00,Onboarding map wording updates,Client requests routine wording changes by Friday.,normal,P2,new,VC-008,2026-08-17T20:12:00+10:00
+TK-INT-801,INTERNAL,PJ-INT-01,2026-08-14T12:00:00+10:00,Accelerator prototype research block,Internal research and prototype work scheduled for Monday.,normal,P2,planned,VC-002,2026-08-28T17:00:00+10:00

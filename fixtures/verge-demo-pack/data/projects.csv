@@ -1,0 +1,9 @@
+project_id,client_id,name,status,start_date,deadline,budget_aud,budget_used_pct,lead_staff_id,assigned_staff_ids,commitment
+PJ-BH-01,CL-BH,Control Tower Stabilisation,red,2026-06-15,2026-08-19T17:00:00+10:00,145000,76,VC-007,VC-004|VC-007|VC-009,Executive preview 18 Aug 16:00; production launch 19 Aug 17:00
+PJ-CS-01,CL-CS,Service Dispatch Redesign,amber,2026-07-20,2026-08-21T16:00:00+10:00,88000,48,VC-008,VC-005|VC-008,Board-ready backlog recommendation by 21 Aug
+PJ-EL-01,CL-EL,Enterprise Cohort Launch,red,2026-07-01,2026-08-18T09:00:00+10:00,72000,83,VC-010,VC-005|VC-008|VC-010,85-person workshop begins 18 Aug 09:00
+PJ-FF-01,CL-FF,Inventory Reliability Program,amber,2026-07-10,2026-08-20T12:00:00+10:00,93000,61,VC-009,VC-004|VC-009,Promotion readiness decision by 20 Aug noon
+PJ-LP-01,CL-LP,Client Onboarding Workflow,green,2026-08-03,2026-08-21T17:00:00+10:00,54000,32,VC-008,VC-005|VC-008,Revised onboarding map by 21 Aug
+PJ-MH-01,CL-MH,Returns Reduction Sprint,amber,2026-08-03,2026-08-19T15:00:00+10:00,81000,41,VC-008,VC-004|VC-008|VC-009,Root-cause brief before campaign expansion on 19 Aug
+PJ-PR-01,CL-PR,Pipeline Diagnostic,amber,2026-08-10,2026-08-18T15:00:00+10:00,67000,38,VC-009,VC-005|VC-009,Initial diagnostic by 18 Aug 15:00
+PJ-INT-01,INTERNAL,ContextOps Advisory Accelerator,planned,2026-08-10,2026-08-28T17:00:00+10:00,30000,20,VC-002,VC-002|VC-007|VC-009,Internal prototype review 28 Aug; movable unless approved otherwise

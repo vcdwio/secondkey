@@ -1,0 +1,38 @@
+{
+  "task_id": "DEMO-PORTFOLIO-001",
+  "mode": "demo",
+  "external_write": false,
+  "client_email_drafts": [
+    {
+      "client_id": "CL-BH",
+      "to": "rachel.tan@blueharbor.example",
+      "subject": "BlueHarbor incident ownership and next update",
+      "body": "Rachel, we have confirmed two linked risks: stale ETA values affecting tomorrow's 4pm executive preview and an unresolved credential rotation ahead of Wednesday production launch. Marcus Reed is the proposed incident lead, supported by Noah Kim for feed reconciliation. We will provide a containment assessment by 11:30am. The Wednesday launch commitment has not been changed and any revised commitment would require approval.",
+      "approval_required": true,
+      "send_status": "draft_only"
+    },
+    {
+      "client_id": "CL-EL",
+      "to": "aisha.khan@elevatelearning.example",
+      "subject": "Proposed replacement facilitator plan",
+      "body": "Aisha, we understand the 85-person workshop remains fixed for Tuesday at 9am. A qualified replacement is tentatively available. Verge is preparing the client-specific briefing and accessibility handover, with a confirmed name and readiness update due by noon today. The contractor booking remains subject to approval.",
+      "approval_required": true,
+      "send_status": "draft_only"
+    }
+  ],
+  "internal_tasks": [
+    {"task":"Contain BlueHarbor ETA and credential risks","owner_staff_id":"VC-007","support_staff_ids":["VC-009"],"due":"2026-08-17T11:30:00+10:00","status":"proposed"},
+    {"task":"Brief Elevate replacement facilitator","owner_staff_id":"VC-010","support_staff_ids":["VC-008"],"due":"2026-08-17T12:00:00+10:00","status":"proposed"},
+    {"task":"Separate Morrow sizing and packaging return causes","owner_staff_id":"VC-008","support_staff_ids":["VC-009"],"due":"2026-08-18T12:00:00+10:00","status":"proposed"},
+    {"task":"Prepare Peakline three-action pipeline diagnosis","owner_staff_id":"VC-009","support_staff_ids":["VC-005"],"due":"2026-08-18T15:00:00+10:00","status":"proposed"},
+    {"task":"Document reusable incident patterns for accelerator","owner_staff_id":"VC-002","support_staff_ids":[],"due":"2026-08-17T17:00:00+10:00","status":"proposed"}
+  ],
+  "proposed_calendar_changes": [
+    {"event_id":"EV-012","change":"Move ContextOps accelerator focus block to 18 Aug 13:00","approval_required":true},
+    {"event_id":"EV-002","change":"Confirm BlueHarbor containment session","approval_required":true},
+    {"event_id":"EV-005","change":"Confirm Elevate replacement briefing","approval_required":true}
+  ],
+  "crm_drafts": [
+    {"client_id":"CL-BH","field":"status","current":"at_risk","proposed":"critical_attention","approval_required":true}
+  ]
+}

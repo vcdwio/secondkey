@@ -1,0 +1,86 @@
+[
+  {
+    "client_id": "CL-BH",
+    "client_name": "BlueHarbor Logistics",
+    "tier": "Enterprise",
+    "account_manager_id": "VC-004",
+    "annual_value_aud": 420000,
+    "renewal_date": "2026-09-30",
+    "health_score": 58,
+    "status": "at_risk",
+    "current_project_id": "PJ-BH-01",
+    "write_permission": "draft_only_until_approval"
+  },
+  {
+    "client_id": "CL-CS",
+    "client_name": "CivicServe Solutions",
+    "tier": "Growth",
+    "account_manager_id": "VC-005",
+    "annual_value_aud": 240000,
+    "renewal_date": "2027-01-31",
+    "health_score": 71,
+    "status": "active",
+    "current_project_id": "PJ-CS-01",
+    "write_permission": "draft_only_until_approval"
+  },
+  {
+    "client_id": "CL-EL",
+    "client_name": "Elevate Learning",
+    "tier": "Growth",
+    "account_manager_id": "VC-005",
+    "annual_value_aud": 180000,
+    "renewal_date": "2026-12-15",
+    "health_score": 74,
+    "status": "delivery_risk",
+    "current_project_id": "PJ-EL-01",
+    "write_permission": "draft_only_until_approval"
+  },
+  {
+    "client_id": "CL-FF",
+    "client_name": "Field & Found Wholesale",
+    "tier": "Growth",
+    "account_manager_id": "VC-004",
+    "annual_value_aud": 195000,
+    "renewal_date": "2027-02-28",
+    "health_score": 69,
+    "status": "active",
+    "current_project_id": "PJ-FF-01",
+    "write_permission": "draft_only_until_approval"
+  },
+  {
+    "client_id": "CL-LP",
+    "client_name": "Ledgerwise Partners",
+    "tier": "Standard",
+    "account_manager_id": "VC-005",
+    "annual_value_aud": 135000,
+    "renewal_date": "2027-03-31",
+    "health_score": 82,
+    "status": "healthy",
+    "current_project_id": "PJ-LP-01",
+    "write_permission": "draft_only_until_approval"
+  },
+  {
+    "client_id": "CL-MH",
+    "client_name": "Morrow Home",
+    "tier": "Growth",
+    "account_manager_id": "VC-004",
+    "annual_value_aud": 210000,
+    "renewal_date": "2026-11-30",
+    "health_score": 67,
+    "status": "watch",
+    "current_project_id": "PJ-MH-01",
+    "write_permission": "draft_only_until_approval"
+  },
+  {
+    "client_id": "CL-PR",
+    "client_name": "Peakline Revenue",
+    "tier": "Growth",
+    "account_manager_id": "VC-005",
+    "annual_value_aud": 160000,
+    "renewal_date": "2026-10-31",
+    "health_score": 64,
+    "status": "watch",
+    "current_project_id": "PJ-PR-01",
+    "write_permission": "draft_only_until_approval"
+  }
+]

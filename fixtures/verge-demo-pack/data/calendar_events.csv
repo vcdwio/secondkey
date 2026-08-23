@@ -1,0 +1,13 @@
+event_id,start,end,title,owner_staff_id,participants,client_id,project_id,status
+EV-001,2026-08-17T09:00:00+10:00,2026-08-17T09:30:00+10:00,GM Monday portfolio review,VC-001,VC-002|VC-003|VC-006,INTERNAL,PJ-INT-01,confirmed
+EV-002,2026-08-17T09:30:00+10:00,2026-08-17T11:30:00+10:00,BlueHarbor incident containment,VC-007,VC-004|VC-009,CL-BH,PJ-BH-01,proposed
+EV-003,2026-08-18T16:00:00+10:00,2026-08-18T17:00:00+10:00,BlueHarbor executive preview,VC-004,VC-007|CT-BH-01|CT-BH-02,CL-BH,PJ-BH-01,confirmed
+EV-004,2026-08-19T17:00:00+10:00,2026-08-19T18:00:00+10:00,BlueHarbor production launch checkpoint,VC-007,VC-004|CT-BH-02,CL-BH,PJ-BH-01,confirmed
+EV-005,2026-08-17T10:00:00+10:00,2026-08-17T12:00:00+10:00,Elevate facilitator replacement briefing,VC-010,VC-005|VC-008,CL-EL,PJ-EL-01,proposed
+EV-006,2026-08-18T09:00:00+10:00,2026-08-18T16:00:00+10:00,Elevate enterprise workshop,VC-010,VC-005|CT-EL-01|CT-EL-02,CL-EL,PJ-EL-01,confirmed
+EV-007,2026-08-17T13:00:00+10:00,2026-08-17T15:00:00+10:00,Morrow returns root-cause analysis,VC-008,VC-004|VC-009,CL-MH,PJ-MH-01,confirmed
+EV-008,2026-08-18T15:00:00+10:00,2026-08-18T15:30:00+10:00,Peakline initial diagnostic readout,VC-009,VC-005|CT-PR-01|CT-PR-02,CL-PR,PJ-PR-01,confirmed
+EV-009,2026-08-20T12:00:00+10:00,2026-08-20T12:30:00+10:00,Field & Found promotion go/no-go,VC-004,VC-009|CT-FF-01|CT-FF-02,CL-FF,PJ-FF-01,confirmed
+EV-010,2026-08-21T11:00:00+10:00,2026-08-21T12:00:00+10:00,CivicServe board preparation,VC-005,VC-008|CT-CS-01|CT-CS-02,CL-CS,PJ-CS-01,confirmed
+EV-011,2026-08-21T15:00:00+10:00,2026-08-21T15:30:00+10:00,Ledgerwise onboarding review,VC-005,VC-008|CT-LP-02,CL-LP,PJ-LP-01,confirmed
+EV-012,2026-08-17T09:00:00+10:00,2026-08-17T13:00:00+10:00,ContextOps accelerator focus block,VC-002,VC-007|VC-009,INTERNAL,PJ-INT-01,movable

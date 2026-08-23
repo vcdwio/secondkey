@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Verge Unit Input",
+  "type": "object",
+  "required": [
+    "task_id",
+    "mode",
+    "unit",
+    "objective",
+    "risk_level"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string"
+    },
+    "mode": {
+      "const": "demo"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "objective": {
+      "type": "string"
+    },
+    "entity_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "input_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk_level": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "budget_limit": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "deadline": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

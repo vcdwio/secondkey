@@ -1,0 +1,15 @@
+contact_id,client_id,name,title,email,authority
+CT-BH-01,CL-BH,Rachel Tan,Chief Operating Officer,rachel.tan@blueharbor.example,executive_sponsor
+CT-BH-02,CL-BH,Owen Fraser,Head of Transformation,owen.fraser@blueharbor.example,project_owner
+CT-CS-01,CL-CS,Mia Robertson,Operations Director,mia.robertson@civicserve.example,executive_sponsor
+CT-CS-02,CL-CS,Ben Lawson,Service Delivery Lead,ben.lawson@civicserve.example,project_owner
+CT-EL-01,CL-EL,Aisha Khan,Enterprise Programs Director,aisha.khan@elevatelearning.example,executive_sponsor
+CT-EL-02,CL-EL,Tom Riley,Program Coordinator,tom.riley@elevatelearning.example,project_owner
+CT-FF-01,CL-FF,Chloe Martin,Commercial Director,chloe.martin@fieldfound.example,executive_sponsor
+CT-FF-02,CL-FF,Ethan Brooks,Inventory Manager,ethan.brooks@fieldfound.example,project_owner
+CT-LP-01,CL-LP,Samuel Price,Managing Partner,samuel.price@ledgerwise.example,executive_sponsor
+CT-LP-02,CL-LP,Alex Morgan,Client Operations Manager,alex.morgan@ledgerwise.example,project_owner
+CT-MH-01,CL-MH,Isla Morgan,Chief Customer Officer,isla.morgan@morrowhome.example,executive_sponsor
+CT-MH-02,CL-MH,Alex Morgan,E-commerce Operations Lead,alex.morgan@morrowhome.example,project_owner
+CT-PR-01,CL-PR,Jordan Lee,Chief Revenue Officer,jordan.lee@peakline.example,executive_sponsor
+CT-PR-02,CL-PR,Nina Shah,Revenue Operations Manager,nina.shah@peakline.example,project_owner

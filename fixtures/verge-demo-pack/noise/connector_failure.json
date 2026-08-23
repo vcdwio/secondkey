@@ -1,0 +1,15 @@
+{
+  "request_id": "NOISE-003",
+  "connector": "mock_crm_write",
+  "error": "HTTP 503 demo failure",
+  "retry_policy": {
+    "max_attempts": 3,
+    "backoff_seconds": [
+      1,
+      2,
+      4
+    ]
+  },
+  "expected_action": "save_draft_alert_human",
+  "external_write": false
+}

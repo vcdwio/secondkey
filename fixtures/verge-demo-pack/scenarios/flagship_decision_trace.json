@@ -1,0 +1,19 @@
+{
+  "trace_id": "TRACE-DEMO-PORTFOLIO-001",
+  "task_id": "DEMO-PORTFOLIO-001",
+  "mode": "demo",
+  "external_write": false,
+  "steps": [
+    {"step":1,"component":"Trigger","result":"Accepted 9 active requests and generated one portfolio task."},
+    {"step":2,"component":"Context & Identity","result":"Resolved 7 client accounts, 8 projects and 10 staff; kept the two Alex Morgan contacts separate."},
+    {"step":3,"component":"Security Filter","result":"Quarantined EM-023 as prompt injection and denied EM-030 as a cross-account request."},
+    {"step":4,"component":"Knowledge Retrieval","result":"Selected active SLA policy v3 and rejected archived policy v2."},
+    {"step":5,"component":"Conflict Resolver","result":"Resolved BlueHarbor Tuesday as executive preview and Wednesday as production launch using MT-BH-01."},
+    {"step":6,"component":"Decision Engine","result":"Assigned P0 to BlueHarbor and Elevate; P1 to Morrow, Peakline, Field & Found and CivicServe; P2 to Ledgerwise and internal product work."},
+    {"step":7,"component":"Resource Planner","result":"Proposed moving 7 internal-product hours plus 2 Morrow hours; preserved skill fit and exposed downstream impact."},
+    {"step":8,"component":"Policy Gate","result":"Required GM approval because combined reallocation exceeds 8 hours, external drafts are proposed and contractor spend is requested."},
+    {"step":9,"component":"Output Composer","result":"Prepared two client-email drafts, five internal tasks, three proposed calendar changes and one CRM draft."},
+    {"step":10,"component":"Audit / Eval","result":"Passed flagship expected-priority, evidence, permission and external-write checks."}
+  ],
+  "final_status": "awaiting_approval"
+}

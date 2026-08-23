@@ -1,0 +1,8 @@
+client_id,name,industry,tier,account_manager_id,annual_value_aud,renewal_date,health_score,default_sla_hours,access_group,status,primary_need
+CL-BH,BlueHarbor Logistics,Logistics,Enterprise,VC-004,420000,2026-09-30,58,2,acct_blueharbor,at_risk,Control-tower stabilisation and executive launch support
+CL-CS,CivicServe Solutions,Business Services,Growth,VC-005,240000,2027-01-31,71,8,acct_civicserve,active,Field-service dispatch redesign and backlog reduction
+CL-EL,Elevate Learning,Training,Growth,VC-005,180000,2026-12-15,74,4,acct_elevate,delivery_risk,Enterprise cohort launch and facilitator operations
+CL-FF,Field & Found Wholesale,Retail & Wholesale,Growth,VC-004,195000,2027-02-28,69,8,acct_fieldfound,active,Inventory reliability and supplier coordination
+CL-LP,Ledgerwise Partners,Accounting Services,Standard,VC-005,135000,2027-03-31,82,12,acct_ledgerwise,healthy,Client onboarding workflow and document collection; no accounting advice
+CL-MH,Morrow Home,E-commerce,Growth,VC-004,210000,2026-11-30,67,6,acct_morrow,watch,Returns reduction and campaign-to-inventory coordination
+CL-PR,Peakline Revenue,Sales Outsourcing,Growth,VC-005,160000,2026-10-31,64,6,acct_peakline,watch,Pipeline diagnostic and CRM operating model

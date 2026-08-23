@@ -1,0 +1,26 @@
+{
+  "platform": "Verge Consulting ContextOps",
+  "business_units": [
+    {"unit_id":"intake_triage","name":"Intake & Triage","purpose":"Unify, deduplicate, classify and route incoming work."},
+    {"unit_id":"customer_service","name":"Customer Service","purpose":"Prepare grounded client responses, escalations and follow-up."},
+    {"unit_id":"sales_crm","name":"Sales & CRM","purpose":"Qualify opportunities, prepare account actions and draft CRM updates."},
+    {"unit_id":"operations_scheduling","name":"Operations & Scheduling","purpose":"Allocate people, tasks, dependencies and calendar capacity."},
+    {"unit_id":"finance_admin","name":"Finance Admin","purpose":"Prepare invoice, cost and approval records without professional accounting judgement."},
+    {"unit_id":"knowledge_documents","name":"Knowledge & Documents","purpose":"Retrieve current internal knowledge and compose sourced documents."},
+    {"unit_id":"marketing_content","name":"Marketing & Content","purpose":"Prepare campaign and communication assets subject to approval."},
+    {"unit_id":"research_insights","name":"Research & Insights","purpose":"Create source-backed company, market and operational research."},
+    {"unit_id":"people_onboarding","name":"People & Onboarding","purpose":"Support staffing, skills, onboarding and training operations."},
+    {"unit_id":"purchase_order","name":"Purchase & Order","purpose":"Prepare vendor comparisons, contractor requests and purchase approvals."}
+  ],
+  "shared_core": [
+    "Trigger and Intake Gateway",
+    "Manager and Orchestrator",
+    "Context Quality and Identity",
+    "Evidence-backed Decision Engine",
+    "Output Composer",
+    "Risk and Approval Gate",
+    "Connector Execution",
+    "Audit and Eval",
+    "Demo Sandbox"
+  ]
+}

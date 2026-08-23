@@ -1,0 +1,92 @@
+{
+  "mode": "demo",
+  "scenario_id": "flagship_monday_capacity_crisis",
+  "task_id": "DEMO-PORTFOLIO-001",
+  "expected_priorities": [
+    {
+      "client_id": "CL-BH",
+      "priority": "P0",
+      "reason": "Enterprise two-hour SLA, executive preview within 32 hours, unresolved data and credential blockers."
+    },
+    {
+      "client_id": "CL-EL",
+      "priority": "P0",
+      "reason": "Committed 85-person workshop within 24 hours has no available lead facilitator."
+    },
+    {
+      "client_id": "CL-MH",
+      "priority": "P1",
+      "reason": "Returns more than doubled and campaign expansion is imminent, but evidence is required before action."
+    },
+    {
+      "client_id": "CL-PR",
+      "priority": "P1",
+      "reason": "Board-driven diagnostic due Tuesday 15:00."
+    },
+    {
+      "client_id": "CL-FF",
+      "priority": "P1",
+      "reason": "Promotion decision due Thursday with stale supplier data."
+    },
+    {
+      "client_id": "CL-CS",
+      "priority": "P1",
+      "reason": "Backlog affects board review Friday; no immediate customer communication required."
+    },
+    {
+      "client_id": "CL-LP",
+      "priority": "P2",
+      "reason": "Routine wording update with Friday deadline and healthy account."
+    },
+    {
+      "client_id": "INTERNAL",
+      "priority": "P2",
+      "reason": "Internal accelerator deadline is movable and must yield to approved P0 client incidents."
+    }
+  ],
+  "resource_changes": [
+    {
+      "staff_id": "VC-007",
+      "from_project": "PJ-INT-01",
+      "to_project": "PJ-BH-01",
+      "hours": 4,
+      "role": "incident lead"
+    },
+    {
+      "staff_id": "VC-009",
+      "from_project": "PJ-INT-01",
+      "to_project": "PJ-BH-01",
+      "hours": 3,
+      "role": "data reconciliation and evidence pack"
+    },
+    {
+      "staff_id": "VC-008",
+      "from_project": "PJ-MH-01",
+      "to_project": "PJ-EL-01",
+      "hours": 2,
+      "role": "facilitator briefing; Morrow analysis resumes at 13:00"
+    },
+    {
+      "staff_id": "VC-010",
+      "from_project": "PJ-EL-01",
+      "to_project": "PJ-EL-01",
+      "hours": 3,
+      "role": "replacement and logistics coordination"
+    }
+  ],
+  "deferred_work": [
+    {
+      "project_id": "PJ-INT-01",
+      "impact": "Move prototype work by one business day; preserve two hours of Daniel Cho documentation."
+    }
+  ],
+  "approval_required": true,
+  "approval_owner": "VC-001",
+  "approval_reasons": [
+    "More than eight staff hours are affected.",
+    "AUD 1,800 contractor cost is proposed.",
+    "External client communications are drafted."
+  ],
+  "external_write": false,
+  "passed": true
+}

@@ -1,0 +1,5 @@
+invoice_id,client_id,project_id,amount_aud,type,status,due_date,approval_required_by
+INV-EL-0826,CL-EL,PJ-EL-01,1800,proposed_contractor_cost,awaiting_approval,2026-08-17,VC-001
+INV-BH-0726,CL-BH,PJ-BH-01,35000,milestone_invoice,paid,2026-07-31,
+INV-MH-0826,CL-MH,PJ-MH-01,22500,milestone_invoice,scheduled,2026-08-31,VC-003
+INV-INT-001,INTERNAL,PJ-INT-01,6000,internal_budget_remaining,available,2026-08-28,VC-002

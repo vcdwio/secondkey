@@ -1,0 +1,7 @@
+{
+  "request_id": "NOISE-002",
+  "question": "State BlueHarbor annual revenue and profit margin.",
+  "available_evidence": [],
+  "expected_action": "abstain_no_authoritative_source",
+  "external_write": false
+}

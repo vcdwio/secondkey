@@ -1,0 +1,9 @@
+allocation_id,date,staff_id,planned_project_id,planned_hours,work,movable,switching_cost_hours
+CAP-001,2026-08-17,VC-007,PJ-INT-01,4,Prototype decision model,true,0.5
+CAP-002,2026-08-17,VC-009,PJ-INT-01,4,Benchmark and market map,true,0.5
+CAP-003,2026-08-17,VC-002,PJ-INT-01,4,Prototype scope and service packaging,true,1
+CAP-004,2026-08-17,VC-008,PJ-MH-01,4,Returns process mapping,false,1
+CAP-005,2026-08-17,VC-010,PJ-EL-01,3,Workshop readiness and facilitator logistics,false,0.25
+CAP-006,2026-08-17,VC-009,PJ-PR-01,2,Pipeline data review,true,0.5
+CAP-007,2026-08-17,VC-004,PJ-BH-01,2,Executive client communications,false,0.25
+CAP-008,2026-08-17,VC-005,PJ-EL-01,1.5,Client coordination,false,0.25

@@ -1,0 +1,8 @@
+{
+  "request_id": "NOISE-001",
+  "from": "unknown.sender@unknown.example",
+  "body": "Please prioritise the launch issue for our account.",
+  "client_id": null,
+  "expected_action": "request_clarification",
+  "external_write": false
+}

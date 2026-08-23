@@ -1,0 +1,53 @@
+{
+  "pack_name": "Verge Consulting ContextOps Demo Data Pack",
+  "version": "1.0.0",
+  "mode": "demo",
+  "generated_for": "ContextOps / Relevance AI portfolio demonstration",
+  "tenant": {
+    "tenant_id": "TENANT-VERGE-DEMO",
+    "name": "Verge Consulting",
+    "location": "Sydney, Australia",
+    "fictional": true
+  },
+  "counts": {
+    "staff": 10,
+    "clients": 7,
+    "contacts": 14,
+    "projects": 8,
+    "emails": 30,
+    "calendar_events": 12,
+    "meetings": 8,
+    "call_logs": 8,
+    "tickets": 9,
+    "eval_scenarios": 25
+  },
+  "safety": {
+    "external_write": false,
+    "real_credentials": false,
+    "real_personal_data": false,
+    "all_domains_reserved_example": true
+  },
+  "flagship_scenario": "scenarios/flagship_monday_capacity_crisis.json",
+  "flagship_context_packet": "scenarios/context_packets/flagship_context_packet.json",
+  "flagship_decision_trace": "scenarios/flagship_decision_trace.json",
+  "flagship_proposed_outputs": "scenarios/flagship_proposed_outputs.json",
+  "unit_catalog": "schemas/unit_catalog.json",
+  "import_order": [
+    "data/staff.csv",
+    "data/clients.csv",
+    "data/contacts.csv",
+    "data/projects.csv",
+    "data/entity_access.csv",
+    "data/crm_accounts.json",
+    "data/emails.csv",
+    "data/calendar_events.csv",
+    "data/meetings.json",
+    "data/call_logs.json",
+    "data/tickets.csv",
+    "data/staff_capacity.csv",
+    "data/invoices.csv",
+    "knowledge/current",
+    "research",
+    "scenarios/eval_scenarios.json"
+  ]
+}
