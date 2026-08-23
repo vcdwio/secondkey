@@ -7,11 +7,15 @@ export function ExecutionPanel({
   approved,
   onRollback,
   rolledBack,
+  capacityStatus,
+  capacityLockVersion,
 }: {
   results: ExecutionResult[];
   approved: boolean;
   onRollback: () => void;
   rolledBack: boolean;
+  capacityStatus: "available" | "reserved" | "released" | "conflict";
+  capacityLockVersion: number;
 }) {
   const reversible = results.filter((item) => item.reversible).length;
 
@@ -35,6 +39,10 @@ export function ExecutionPanel({
              checked, then stopped at the environment boundary.`
           : `${results.length} changes are staged behind the approval gate. Nothing is prepared for sending until a
              person with authority decides.`}
+      </p>
+
+      <p className="run-notice" role="status">
+        capacity {capacityStatus} · optimistic lock v{capacityLockVersion}
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>

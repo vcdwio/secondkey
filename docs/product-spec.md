@@ -1,4 +1,4 @@
-# Verge ContextOps Unit Platform — Product Spec
+# SecondKey — Product Spec
 
 ## Product outcome
 

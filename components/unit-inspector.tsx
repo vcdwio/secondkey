@@ -1,7 +1,7 @@
 "use client";
 
 import { useDialog } from "@/components/use-dialog";
-import { PORTFOLIO, pct } from "@/lib/contextops/portfolio";
+import { PORTFOLIO, pct, type UnitRegistryEntry } from "@/lib/contextops/portfolio";
 import type { BusinessUnit } from "@/lib/contextops/types";
 
 export interface UnitRunResult {
@@ -18,12 +18,14 @@ export interface UnitRunResult {
 
 export function UnitInspector({
   unit,
+  registry,
   open,
   result,
   onClose,
   onRun,
 }: {
   unit: BusinessUnit;
+  registry: UnitRegistryEntry;
   open: boolean;
   result?: UnitRunResult;
   onClose: () => void;
@@ -67,6 +69,20 @@ export function UnitInspector({
             <b style={{ width: `${unit.qualityScore * 10}%` }} />
           </i>
         </div>
+
+        <section className="drawer-section">
+          <div className="drawer-section-title">
+            <div>
+              <span className="eyebrow">Agent Registry</span>
+              <strong>Registry v{registry.version} · {registry.status.replace("_", " ")}</strong>
+            </div>
+            <span className="chip pass">cross-department discoverable</span>
+          </div>
+          <p className="note">
+            {registry.department} · {registry.inputContract.length} inputs · {registry.outputContract.length} outputs ·
+            approval_required: {String(registry.approvalRequired)}
+          </p>
+        </section>
 
         <p className="drawer-purpose">{unit.purpose}</p>
 

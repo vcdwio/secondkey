@@ -1,0 +1,206 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import dotenv from "dotenv";
+import express from "express";
+
+import {
+  CONTEXTOPS_APP_NAME,
+  createAdkTriageRuntime,
+  describeGeminiAccess,
+  resolveGeminiAccess,
+} from "./adk.js";
+import { resolveAgentRoot } from "./config.js";
+import { loadFixtureContext, loadRawInbound, resolveRepoRoot } from "./inbound.js";
+import { REGISTRY_ENTRIES, createRegistryService } from "./registry.js";
+import { createAgentServices, type AgentServiceBundle } from "./services.js";
+import { AuditStore, initializeTelemetry, type TelemetryMode } from "./telemetry.js";
+import { processEmailTriage, type ToolCallRequester } from "./triage.js";
+
+const agentRoot = resolveAgentRoot(path.dirname(fileURLToPath(import.meta.url)));
+dotenv.config({ path: path.join(agentRoot, ".env"), quiet: true });
+
+type RegistryService = ReturnType<typeof createRegistryService>;
+
+export interface AppDependencies {
+  env?: Record<string, string | undefined>;
+  services?: AgentServiceBundle;
+  registryService?: RegistryService;
+  auditStore?: AuditStore;
+  requestToolCall?: ToolCallRequester;
+}
+
+class HttpError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message);
+  }
+}
+
+function telemetryMode(env: Record<string, string | undefined>): TelemetryMode {
+  const mode = env.CONTEXTOPS_TELEMETRY ?? "console";
+  if (mode !== "off" && mode !== "console" && mode !== "gcp") {
+    throw new Error("CONTEXTOPS_TELEMETRY must be off, console, or gcp");
+  }
+  return mode;
+}
+
+export function createApp(dependencies: AppDependencies = {}) {
+  const env = dependencies.env ?? process.env;
+  const services = dependencies.services ?? createAgentServices(env);
+  const registryService = dependencies.registryService ?? createRegistryService(env);
+  const auditStore = dependencies.auditStore ?? new AuditStore();
+  const model = env.GEMINI_MODEL ?? "gemini-3.7-flash";
+  const modelAccess = describeGeminiAccess(env);
+  const mode = telemetryMode(env);
+  let adkRequester: ToolCallRequester | undefined = dependencies.requestToolCall;
+
+  const getRequester = () => {
+    if (adkRequester) return adkRequester;
+    try {
+      adkRequester = createAdkTriageRuntime({
+        access: resolveGeminiAccess(env),
+        model,
+        services,
+      }).requestScorePriority;
+      return adkRequester;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Gemini access is unavailable";
+      throw new HttpError(503, message);
+    }
+  };
+
+  const app = express();
+  app.disable("x-powered-by");
+  app.use((request, response, next) => {
+    const allowedOrigin = env.CONTEXTOPS_UI_ORIGIN?.trim();
+    const requestOrigin = request.headers.origin;
+    if (allowedOrigin && requestOrigin === allowedOrigin) {
+      response.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+      response.setHeader("Vary", "Origin");
+      response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+      response.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    }
+    if (request.method === "OPTIONS") {
+      response.sendStatus(204);
+      return;
+    }
+    next();
+  });
+  app.use(express.json({ limit: "64kb" }));
+
+  app.get("/healthz", (_request, response) => {
+    response.json({
+      status: "ok",
+      external_write: false,
+      runtime: "google-adk",
+      state_backend: services.mode,
+      model,
+      model_backend: modelAccess.backend,
+      model_location: modelAccess.location,
+      registry_count: REGISTRY_ENTRIES.length,
+      telemetry_mode: mode,
+    });
+  });
+
+  app.get("/registry", async (_request, response, next) => {
+    try {
+      response.json(await registryService.list());
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/sessions/:id", async (request, response, next) => {
+    try {
+      const userId = typeof request.query.user_id === "string"
+        ? request.query.user_id
+        : "demo-operator";
+      const session = await services.sessionService.getSession({
+        appName: CONTEXTOPS_APP_NAME,
+        userId,
+        sessionId: request.params.id,
+      });
+      if (!session) throw new HttpError(404, "Session not found");
+      response.json({ external_write: false, session });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/audit.json", (_request, response) => {
+    response.json(auditStore.toJson());
+  });
+
+  app.get("/audit.csv", (_request, response) => {
+    response.type("text/csv").send(auditStore.toSafeCsv());
+  });
+
+  app.post("/triage", async (request, response, next) => {
+    try {
+      const repoRoot = resolveRepoRoot();
+      const inbound = loadRawInbound(repoRoot);
+      const context = loadFixtureContext(repoRoot);
+      const rawIds = request.body?.email_ids;
+      if (rawIds !== undefined && !Array.isArray(rawIds)) {
+        throw new HttpError(400, "email_ids must be an array of strings");
+      }
+      const emailIds = rawIds?.filter(
+        (value: unknown): value is string => typeof value === "string",
+      ) as string[] | undefined;
+      if (rawIds && emailIds?.length !== rawIds.length) {
+        throw new HttpError(400, "email_ids must be an array of strings");
+      }
+      const requestedIds = emailIds ? new Set(emailIds) : null;
+      if (requestedIds) {
+        const availableIds = new Set(inbound.map((email) => email.id));
+        const unknownIds = [...requestedIds].filter((id) => !availableIds.has(id));
+        if (unknownIds.length) {
+          throw new HttpError(400, `Unknown email_ids: ${unknownIds.join(", ")}`);
+        }
+      }
+
+      const selected = requestedIds
+        ? inbound.filter((email) => requestedIds.has(email.id))
+        : inbound;
+      const results = [];
+      for (const email of selected) {
+        const result = await processEmailTriage(email, inbound, context, getRequester());
+        results.push(result);
+        auditStore.record({
+          time: new Date().toISOString(),
+          component: "Intake & Triage",
+          actor: result.actor_client_id ?? email.from_email,
+          role: result.actor_client_id ? "Client Contact" : "Unresolved Sender",
+          message: `${result.outcome}: ${result.reasons.join("; ")}`,
+          evidence: [result.email_id, ...(result.duplicate_of ? [result.duplicate_of] : [])],
+          task_id: result.email_id,
+          policy_outcome: result.outcome.toUpperCase(),
+        });
+      }
+      response.json({ external_write: false, processed_count: results.length, results });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.use((error: unknown, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
+    void _next;
+    const status = error instanceof HttpError ? error.status : 500;
+    const message = error instanceof HttpError ? error.message : "Triage failed closed";
+    response.status(status).json({ external_write: false, error: message });
+  });
+
+  return app;
+}
+
+const isEntryPoint = process.argv[1]
+  ? path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+  : false;
+
+if (isEntryPoint) {
+  const port = Number(process.env.PORT ?? 3001);
+  await initializeTelemetry(process.env);
+  createApp().listen(port, () => {
+    console.log(`SecondKey Agent listening on ${port} · external_write=false`);
+  });
+}

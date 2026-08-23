@@ -1,0 +1,16 @@
+.gcloudignore
+.git
+.env
+.env.*
+agent/.env
+node_modules
+agent/node_modules
+dist
+agent/dist
+.next
+.vinext
+.wrangler
+.npm-cache
+.DS_Store
+outputs
+work

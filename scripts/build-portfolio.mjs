@@ -11,6 +11,8 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { allocateCapacity, scoreIncident } from "../lib/contextops/engine.ts";
+
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pack = join(root, "fixtures", "verge-demo-pack");
 
@@ -88,6 +90,17 @@ const staff = staffRows.map((row) => ({
   initials: row.name.split(" ").map((part) => part[0]).join(""),
 }));
 const staffById = Object.fromEntries(staff.map((person) => [person.id, person]));
+
+const capacity = capacityRows.map((row) => ({
+  id: row.allocation_id,
+  staffId: row.staff_id,
+  staffName: staffById[row.staff_id]?.name ?? row.staff_id,
+  projectId: row.planned_project_id,
+  hours: Number(row.planned_hours),
+  work: row.work,
+  movable: row.movable === "true",
+  switchingCostHours: Number(row.switching_cost_hours),
+}));
 
 /* --------------------------------------------------------------- clients */
 
@@ -246,38 +259,112 @@ function confidenceInputs(client) {
 
 /* -------------------------------------------------------------- incidents */
 
+/**
+ * Demand size is a transparent planning rule, not a scenario answer:
+ * three hours to establish command plus two hours for each open P0 ticket.
+ */
+function incidentDemandHours(clientId) {
+  const p0Tickets = ticketRows.filter(
+    (row) => row.client_id === clientId && row.status !== "closed" && row.expected_priority === "P0",
+  ).length;
+  return p0Tickets ? 3 + p0Tickets * 2 : 0;
+}
+
+function requiredSkillsFor(clientId) {
+  const incidentText = ticketRows
+    .filter((row) => row.client_id === clientId && row.status !== "closed")
+    .map((row) => `${row.title} ${row.description}`)
+    .join(" ")
+    .toLowerCase();
+
+  if (/facilitator|workshop|training/.test(incidentText)) {
+    return [
+      "process_mapping",
+      "training_operations",
+      "scheduling",
+      "vendor_coordination",
+      "training_logistics",
+    ];
+  }
+  return [
+    "operations",
+    "data_analysis",
+    "process_design",
+    "market_research",
+    "quantitative_analysis",
+  ];
+}
+
+const allocationDemands = clients
+  .map((client) => ({ client, project: projectByClient[client.id], score: scoreIncident(signalsFor(client)) }))
+  .filter(({ project, score }) => project && score.priority === "P0")
+  .map(({ client, project, score }) => ({
+    id: project.id,
+    priority: score.priority,
+    hoursNeeded: incidentDemandHours(client.id),
+    slaRemainingMinutes: Math.round((signalsFor(client).slaHoursRemaining ?? Number.POSITIVE_INFINITY) * 60),
+    requiredSkills: requiredSkillsFor(client.id),
+  }));
+
+/**
+ * The daily capacity ledger already describes the work consuming today's
+ * incident-response window, so these are incremental hours rather than the
+ * broad availability figure in staff.csv. All proposed releases remain behind
+ * the scenario's GM approval gate, including blocks marked non-movable.
+ */
+const allocationDecision = allocateCapacity({
+  demands: allocationDemands,
+  staff: staff.map((person) => ({ id: person.id, skills: person.skills, availableHours: 0 })),
+  movable: capacity.map((item) => ({
+    staffId: item.staffId,
+    projectId: item.projectId,
+    hours: item.hours,
+    switchingCostHours: item.switchingCostHours,
+  })),
+});
+
+const assignmentByStaff = Object.groupBy(allocationDecision.assignments, (item) => item.staffId);
+
 function releasedFor(clientId) {
   const project = projectByClient[clientId];
   if (!project) return [];
-  return scenario.resource_changes
-    .filter((change) => change.from_project === project.id && change.to_project !== project.id)
-    .map((change) => ({
-      staffId: change.staff_id,
-      name: staffById[change.staff_id]?.name ?? change.staff_id,
-      initials: staffById[change.staff_id]?.initials ?? "?",
-      hours: change.hours,
-      toProject: change.to_project,
-      toProjectName: projects.find((item) => item.id === change.to_project)?.name ?? change.to_project,
-      role: change.role,
-    }));
+  return allocationDecision.released
+    .filter((release) => release.fromProjectId === project.id)
+    .map((release) => {
+      const destination = assignmentByStaff[release.staffId]?.[0];
+      return {
+        staffId: release.staffId,
+        name: staffById[release.staffId]?.name ?? release.staffId,
+        initials: staffById[release.staffId]?.initials ?? "?",
+        hours: release.hours,
+        toProject: destination?.demandId ?? "unassigned",
+        toProjectName: projects.find((item) => item.id === destination?.demandId)?.name ?? "Unassigned",
+        role: destination?.rationale ?? "Released by the deterministic capacity rule",
+      };
+    });
 }
 
 function allocationFor(clientId) {
   const project = projectByClient[clientId];
   if (!project) return [];
-  return scenario.resource_changes
-    .filter((change) => change.to_project === project.id)
-    .map((change) => ({
-      staffId: change.staff_id,
-      name: staffById[change.staff_id]?.name ?? change.staff_id,
-      initials: staffById[change.staff_id]?.initials ?? "?",
-      fromProject: change.from_project,
-      fromProjectName: projects.find((item) => item.id === change.from_project)?.name ?? change.from_project,
-      hours: change.hours,
-      role: change.role,
-      skills: staffById[change.staff_id]?.skills.slice(0, 3) ?? [],
-      availableHours: staffById[change.staff_id]?.availableHours ?? 0,
-    }));
+  return allocationDecision.assignments
+    .filter((assignment) => assignment.demandId === project.id)
+    .map((assignment) => {
+      const release = allocationDecision.released.find((item) => item.staffId === assignment.staffId);
+      return {
+        staffId: assignment.staffId,
+        name: staffById[assignment.staffId]?.name ?? assignment.staffId,
+        initials: staffById[assignment.staffId]?.initials ?? "?",
+        fromProject: release?.fromProjectId ?? "available",
+        fromProjectName:
+          projects.find((item) => item.id === release?.fromProjectId)?.name ?? "Free capacity",
+        hours: assignment.hours,
+        role: assignment.rationale,
+        skillMatch: assignment.skillMatch,
+        skills: staffById[assignment.staffId]?.skills.slice(0, 3) ?? [],
+        availableHours: staffById[assignment.staffId]?.availableHours ?? 0,
+      };
+    });
 }
 
 const REQUEST_SUMMARY = {
@@ -350,9 +437,9 @@ const incidents = clients.map((client) => {
 /* Internal work competes for the same people and must be visible in the queue. */
 const internalProject = projects.find((project) => project.clientId === "INTERNAL");
 const internalExpected = scenario.expected_priorities.find((item) => item.client_id === "INTERNAL");
-const internalReleased = scenario.resource_changes
-  .filter((change) => change.from_project === internalProject.id)
-  .reduce((total, change) => total + change.hours, 0);
+const internalReleased = allocationDecision.released
+  .filter((release) => release.fromProjectId === internalProject.id)
+  .reduce((total, release) => total + release.hours, 0);
 
 const internalItem = {
   id: "INTERNAL",
@@ -399,17 +486,7 @@ const internalItem = {
     evidence: packet.verified_facts.filter((fact) => fact.fact.includes("accelerator")),
   },
   allocation: [],
-  released: scenario.resource_changes
-    .filter((change) => change.from_project === internalProject.id)
-    .map((change) => ({
-      staffId: change.staff_id,
-      name: staffById[change.staff_id]?.name ?? change.staff_id,
-      initials: staffById[change.staff_id]?.initials ?? "?",
-      hours: change.hours,
-      toProject: change.to_project,
-      toProjectName: projects.find((item) => item.id === change.to_project)?.name ?? change.to_project,
-      role: change.role,
-    })),
+  released: releasedFor("INTERNAL"),
   proposedHours: -internalReleased,
   releasedHours: internalReleased,
   openTickets: 0,
@@ -459,26 +536,9 @@ const portfolioConfidence = {
 
 /* --------------------------------------------------------------- capacity */
 
-const capacity = capacityRows.map((row) => ({
-  id: row.allocation_id,
-  staffId: row.staff_id,
-  staffName: staffById[row.staff_id]?.name ?? row.staff_id,
-  projectId: row.planned_project_id,
-  hours: Number(row.planned_hours),
-  work: row.work,
-  movable: row.movable === "true",
-  switchingCostHours: Number(row.switching_cost_hours),
-}));
-
 const availableStaff = staff.filter((person) => person.availableHours >= 4);
 const totalAvailableHours = staff.reduce((total, person) => total + person.availableHours, 0);
 const movableHours = capacity.filter((item) => item.movable).reduce((total, item) => total + item.hours, 0);
-const switchingCost = scenario.resource_changes.reduce((total, change) => {
-  const source = capacity.find(
-    (item) => item.staffId === change.staff_id && item.projectId === change.from_project,
-  );
-  return total + (source?.switchingCostHours ?? 0);
-}, 0);
 
 /* -------------------------------------------------------------------- ROI */
 
@@ -710,8 +770,10 @@ const model = {
     availableStaffNames: availableStaff.map((person) => person.name),
     totalAvailableHours,
     movableHours,
-    switchingCostHours: round(switchingCost, 1),
-    proposedHours: scenario.resource_changes.reduce((total, change) => total + change.hours, 0),
+    switchingCostHours: allocationDecision.totalSwitchingCostHours,
+    proposedHours: allocationDecision.released.reduce((total, release) => total + release.hours, 0),
+    allocationMethod: "deterministic_priority_sla_skill_capacity",
+    unmet: allocationDecision.unmet,
   },
   approval: {
     id: "VC-APR-001",

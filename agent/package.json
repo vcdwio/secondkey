@@ -1,0 +1,39 @@
+{
+  "name": "secondkey-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.13.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/agent/src/server.js",
+    "dev": "tsx watch src/server.ts",
+    "smoke": "tsx scripts/smoke.ts",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google/adk": "2.0.0",
+    "@google/genai": "2.15.0",
+    "@opentelemetry/api": "1.9.0",
+    "@opentelemetry/sdk-trace-base": "2.1.0",
+    "@opentelemetry/sdk-trace-node": "2.1.0",
+    "csv-parse": "6.1.0",
+    "dotenv": "17.2.3",
+    "express": "5.1.0",
+    "zod": "4.2.1"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.5",
+    "@types/node": "22.19.19",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "adm-zip": "0.6.0",
+    "@opentelemetry/core": "2.10.0",
+    "uuid": "11.1.1"
+  }
+}

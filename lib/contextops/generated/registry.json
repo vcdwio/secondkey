@@ -1,0 +1,275 @@
+[
+  {
+    "id": "intake_triage",
+    "name": "Intake & Triage",
+    "chineseName": "统一入口与分流",
+    "department": "Intake Department",
+    "version": "1.0.0",
+    "status": "published_local",
+    "crossDepartmentVisible": true,
+    "inputContract": [
+      "Email, form or webhook",
+      "Client and project hints",
+      "SLA metadata"
+    ],
+    "outputContract": [
+      "task_id",
+      "Deduplicated request",
+      "Priority recommendation",
+      "Route"
+    ],
+    "connectors": [
+      "Gmail",
+      "Forms",
+      "Slack/Teams",
+      "Webhook MCP"
+    ],
+    "approvalRequired": false
+  },
+  {
+    "id": "customer_service",
+    "name": "Customer Service",
+    "chineseName": "客服与案例处理",
+    "department": "Service Department",
+    "version": "1.0.0",
+    "status": "published_local",
+    "crossDepartmentVisible": true,
+    "inputContract": [
+      "Ticket or complaint",
+      "Account context",
+      "Current SLA policy"
+    ],
+    "outputContract": [
+      "Case summary",
+      "Response draft",
+      "Escalation",
+      "Follow-up task"
+    ],
+    "connectors": [
+      "HubSpot",
+      "Zendesk",
+      "Gmail",
+      "Calendar MCP"
+    ],
+    "approvalRequired": false
+  },
+  {
+    "id": "sales_crm",
+    "name": "Sales & CRM",
+    "chineseName": "销售与客户跟进",
+    "department": "Sales Department",
+    "version": "1.0.0",
+    "status": "published_local",
+    "crossDepartmentVisible": true,
+    "inputContract": [
+      "Lead or account",
+      "CRM history",
+      "Meeting and email signals"
+    ],
+    "outputContract": [
+      "Account brief",
+      "Next best action",
+      "Email draft",
+      "CRM draft"
+    ],
+    "connectors": [
+      "HubSpot",
+      "Apollo",
+      "Brandfetch",
+      "Gmail"
+    ],
+    "approvalRequired": false
+  },
+  {
+    "id": "operations_scheduling",
+    "name": "Operations & Scheduling",
+    "chineseName": "运营、项目与日程",
+    "department": "Operations Department",
+    "version": "1.0.0",
+    "status": "published_local",
+    "crossDepartmentVisible": true,
+    "inputContract": [
+      "Project demand",
+      "Staff capacity",
+      "Skills and commitments"
+    ],
+    "outputContract": [
+      "Allocation plan",
+      "Calendar changes",
+      "Dependencies",
+      "Approval packet"
+    ],
+    "connectors": [
+      "Linear",
+      "Asana",
+      "Google Calendar",
+      "HRIS MCP"
+    ],
+    "approvalRequired": true
+  },
+  {
+    "id": "finance_admin",
+    "name": "Finance Admin",
+    "chineseName": "发票、费用与财务行政",
+    "department": "Finance Department",
+    "version": "1.0.0",
+    "status": "published_local",
+    "crossDepartmentVisible": true,
+    "inputContract": [
+      "Invoice or expense",
+      "Project budget",
+      "Approval policy"
+    ],
+    "outputContract": [
+      "Exception list",
+      "Cost summary",
+      "Approval request",
+      "Ledger draft"
+    ],
+    "connectors": [
+      "Xero/QuickBooks API",
+      "Drive",
+      "Approval MCP"
+    ],
+    "approvalRequired": true
+  },
+  {
+    "id": "knowledge_documents",
+    "name": "Knowledge & Documents",
+    "chineseName": "知识与文档",
+    "department": "Knowledge Department",
+    "version": "1.0.0",
+    "status": "published_local",
+    "crossDepartmentVisible": true,
+    "inputContract": [
+      "Entity IDs",
+      "Permission group",
+      "Document intent"
+    ],
+    "outputContract": [
+      "Context Packet",
+      "Citations",
+      "Conflict list",
+      "Document draft"
+    ],
+    "connectors": [
+      "Google Drive",
+      "Notion",
+      "SharePoint",
+      "Docs MCP"
+    ],
+    "approvalRequired": false
+  },
+  {
+    "id": "marketing_content",
+    "name": "Marketing & Content",
+    "chineseName": "营销与内容",
+    "department": "Content Department",
+    "version": "1.0.0",
+    "status": "published_local",
+    "crossDepartmentVisible": true,
+    "inputContract": [
+      "Campaign goal",
+      "Audience",
+      "Brand standard",
+      "Evidence"
+    ],
+    "outputContract": [
+      "Copy",
+      "Brief",
+      "Slides outline",
+      "Publishing approval"
+    ],
+    "connectors": [
+      "OpenAI",
+      "Canva/Gamma",
+      "Google Slides",
+      "Webflow"
+    ],
+    "approvalRequired": true
+  },
+  {
+    "id": "research_insights",
+    "name": "Research & Insights",
+    "chineseName": "研究与洞察",
+    "department": "Research Department",
+    "version": "1.0.0",
+    "status": "published_local",
+    "crossDepartmentVisible": true,
+    "inputContract": [
+      "Research question",
+      "Scope",
+      "Known entities",
+      "Source rules"
+    ],
+    "outputContract": [
+      "Research brief",
+      "Source table",
+      "Contradictions",
+      "Open questions"
+    ],
+    "connectors": [
+      "Web Search",
+      "Apollo",
+      "Brandfetch",
+      "Semrush"
+    ],
+    "approvalRequired": false
+  },
+  {
+    "id": "people_onboarding",
+    "name": "People & Onboarding",
+    "chineseName": "招聘、员工与入职",
+    "department": "People Department",
+    "version": "1.0.0",
+    "status": "published_local",
+    "crossDepartmentVisible": true,
+    "inputContract": [
+      "Role or employee",
+      "Skills",
+      "Availability",
+      "Onboarding policy"
+    ],
+    "outputContract": [
+      "Skill match",
+      "Checklist",
+      "Training plan",
+      "Manager task"
+    ],
+    "connectors": [
+      "HRIS",
+      "Calendar",
+      "Drive",
+      "Learning MCP"
+    ],
+    "approvalRequired": false
+  },
+  {
+    "id": "purchase_order",
+    "name": "Purchase & Order",
+    "chineseName": "采购、供应商与订单",
+    "department": "Purchase Department",
+    "version": "1.0.0",
+    "status": "published_local",
+    "crossDepartmentVisible": true,
+    "inputContract": [
+      "Purchase request",
+      "Vendor quotes",
+      "Budget",
+      "Policy"
+    ],
+    "outputContract": [
+      "Comparison",
+      "Risk flags",
+      "Purchase draft",
+      "Approval request"
+    ],
+    "connectors": [
+      "ERP API",
+      "Airtable",
+      "Gmail",
+      "Approval MCP"
+    ],
+    "approvalRequired": true
+  }
+]

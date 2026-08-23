@@ -6,6 +6,21 @@ import type {
   Priority,
 } from "./types.ts";
 
+export {
+  createCapacityReservationStore,
+  getCapacityState,
+  releaseReservation,
+  reserveCapacity,
+  resetCapacityReservations,
+} from "./capacity.ts";
+export {
+  AUTHORITY_MATRIX,
+  evaluateAuthority,
+  type AuthorityProfile,
+  type AuthorityVerdict,
+  type DecisionScope,
+} from "./authority.ts";
+
 export function scoreIncident(signals: IncidentSignals): {
   priority: Priority;
   reasons: string[];
@@ -129,130 +144,6 @@ export function getRoleScope(role: string) {
   return { clientCount: 7, queueLimit: 5, label: "Portfolio-wide decision authority" };
 }
 
-/* ------------------------------------------------------------------------ */
-/* Authority, separation of duties and reversible execution                  */
-/* ------------------------------------------------------------------------ */
-
-export interface AuthorityProfile {
-  staffId: string;
-  name: string;
-  role: string;
-  maxHours: number;
-  spendLimitAud: number;
-  mayApproveExternalComms: boolean;
-  mayApproveCrossAccount: boolean;
-  scopeLabel: string;
-  clientCount: number;
-  queueLimit: number;
-}
-
-export const AUTHORITY_MATRIX: Record<string, AuthorityProfile> = {
-  "General Manager": {
-    staffId: "VC-001",
-    name: "Olivia Mercer",
-    role: "General Manager",
-    maxHours: Number.POSITIVE_INFINITY,
-    spendLimitAud: 100000,
-    mayApproveExternalComms: true,
-    mayApproveCrossAccount: true,
-    scopeLabel: "Portfolio-wide decision authority",
-    clientCount: 7,
-    queueLimit: 8,
-  },
-  "Delivery Manager": {
-    staffId: "VC-006",
-    name: "Sofia Patel",
-    role: "Delivery & Resource Manager",
-    maxHours: 8,
-    spendLimitAud: 5000,
-    mayApproveExternalComms: false,
-    mayApproveCrossAccount: true,
-    scopeLabel: "Portfolio delivery and capacity",
-    clientCount: 7,
-    queueLimit: 8,
-  },
-  "Account Manager": {
-    staffId: "VC-004",
-    name: "Emma Collins",
-    role: "Senior Account Manager",
-    maxHours: 4,
-    spendLimitAud: 5000,
-    mayApproveExternalComms: true,
-    mayApproveCrossAccount: false,
-    scopeLabel: "Assigned client accounts only",
-    clientCount: 3,
-    queueLimit: 4,
-  },
-  Consultant: {
-    staffId: "VC-007",
-    name: "Marcus Reed",
-    role: "Senior Consultant",
-    maxHours: 0,
-    spendLimitAud: 0,
-    mayApproveExternalComms: false,
-    mayApproveCrossAccount: false,
-    scopeLabel: "Assigned delivery work only",
-    clientCount: 2,
-    queueLimit: 3,
-  },
-};
-
-export interface DecisionScope {
-  hoursAffected: number;
-  spendAud: number;
-  externalCommunications: number;
-  accountsTouched: number;
-}
-
-export interface AuthorityVerdict {
-  canApprove: boolean;
-  blockedBy: string[];
-  escalateTo: string;
-  profile: AuthorityProfile;
-}
-
-/**
- * Separation of duties: the viewer's role is checked against the size of the
- * decision, not against a label. Anything a role cannot clear is escalated by
- * name rather than silently allowed.
- */
-export function evaluateAuthority(role: string, scope: DecisionScope): AuthorityVerdict {
-  const profile = AUTHORITY_MATRIX[role] ?? AUTHORITY_MATRIX.Consultant;
-  const blockedBy: string[] = [];
-
-  if (scope.hoursAffected > profile.maxHours) {
-    blockedBy.push(
-      profile.maxHours === 0
-        ? "This role holds no resource-approval authority"
-        : `${scope.hoursAffected}h exceeds the ${profile.maxHours}h limit for this role`,
-    );
-  }
-  if (scope.spendAud > profile.spendLimitAud) {
-    blockedBy.push(
-      profile.spendLimitAud === 0
-        ? "This role cannot commit spend"
-        : `AUD ${scope.spendAud.toLocaleString()} exceeds the AUD ${profile.spendLimitAud.toLocaleString()} limit`,
-    );
-  }
-  if (scope.externalCommunications > 0 && !profile.mayApproveExternalComms) {
-    blockedBy.push("This role cannot release client communications");
-  }
-  if (scope.accountsTouched > 1 && !profile.mayApproveCrossAccount) {
-    blockedBy.push(`Decision spans ${scope.accountsTouched} accounts; this role approves one account at a time`);
-  }
-
-  const escalateTo =
-    Object.values(AUTHORITY_MATRIX).find(
-      (candidate) =>
-        scope.hoursAffected <= candidate.maxHours &&
-        scope.spendAud <= candidate.spendLimitAud &&
-        (scope.externalCommunications === 0 || candidate.mayApproveExternalComms) &&
-        (scope.accountsTouched <= 1 || candidate.mayApproveCrossAccount),
-    )?.role ?? "General Manager";
-
-  return { canApprove: blockedBy.length === 0, blockedBy, escalateTo, profile };
-}
-
 export type ExecutionStatus = "queued" | "simulated" | "rolled_back" | "held";
 
 export interface ExecutionItem {
@@ -301,4 +192,251 @@ export function rollbackExecution(results: ExecutionResult[]): ExecutionResult[]
       ? "Rolled back with the stored idempotency key; state matches the pre-approval snapshot."
       : "Not reversible by design — this is why it stays behind a human send step.",
   }));
+}
+
+/* ------------------------------------------------------------------------ */
+/* Deterministic capacity allocation                                         */
+/* ------------------------------------------------------------------------ */
+
+export interface CapacityDemand {
+  id: string;
+  priority: Priority;
+  hoursNeeded: number;
+  slaRemainingMinutes: number;
+  requiredSkills: string[];
+}
+
+export interface CapacityStaff {
+  id: string;
+  skills: string[];
+  availableHours: number;
+}
+
+export interface MovableCapacity {
+  staffId: string;
+  projectId: string;
+  hours: number;
+  switchingCostHours: number;
+}
+
+export interface CapacityAllocation {
+  assignments: Array<{
+    staffId: string;
+    demandId: string;
+    hours: number;
+    skillMatch: number;
+    rationale: string;
+  }>;
+  released: Array<{ staffId: string; fromProjectId: string; hours: number }>;
+  unmet: Array<{ demandId: string; hoursShort: number; reason: string }>;
+  totalSwitchingCostHours: number;
+}
+
+const PRIORITY_ORDER: Record<Priority, number> = { P0: 0, P1: 1, P2: 2 };
+const CAPACITY_EPSILON = 1e-9;
+
+function capacityHours(value: number) {
+  return Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
+function roundedHours(value: number) {
+  return Number(value.toFixed(3));
+}
+
+function capacitySkillMatch(requiredSkills: string[], staffSkills: Set<string>) {
+  const required = [...new Set(requiredSkills)];
+  if (required.length === 0) return 1;
+  const matched = required.filter((skill) => staffSkills.has(skill)).length;
+  return Number((matched / required.length).toFixed(3));
+}
+
+/**
+ * Allocates scarce hours with rules that are inspectable and repeatable:
+ * priority, SLA, skill coverage, remaining capacity and finally staff ID.
+ * Free hours are always consumed before a planned block is released.
+ *
+ * `movable` is an approval-filtered list: callers decide which planned blocks
+ * may be released before invoking this function. The allocator never expands
+ * that authority on its own.
+ */
+export function allocateCapacity(input: {
+  demands: CapacityDemand[];
+  staff: CapacityStaff[];
+  movable: MovableCapacity[];
+}): CapacityAllocation {
+  const staffState = new Map(
+    [...input.staff]
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map((person) => [
+        person.id,
+        {
+          id: person.id,
+          skills: new Set(person.skills),
+          freeHours: capacityHours(person.availableHours),
+        },
+      ]),
+  );
+  const blocks = input.movable
+    .map((block, index) => ({
+      ...block,
+      index,
+      remainingHours: capacityHours(block.hours),
+      switchingCostHours: capacityHours(block.switchingCostHours),
+      costCounted: false,
+    }))
+    .filter((block) => staffState.has(block.staffId) && block.remainingHours > CAPACITY_EPSILON);
+  const demands = [...input.demands].sort(
+    (a, b) =>
+      PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority] ||
+      a.slaRemainingMinutes - b.slaRemainingMinutes ||
+      a.id.localeCompare(b.id),
+  );
+
+  const assignmentParts = new Map<
+    string,
+    {
+      staffId: string;
+      demandId: string;
+      hours: number;
+      freeHours: number;
+      releasedHours: number;
+      skillMatch: number;
+    }
+  >();
+  const releases = new Map<string, { staffId: string; fromProjectId: string; hours: number }>();
+  const unmet: CapacityAllocation["unmet"] = [];
+  let switchingCost = 0;
+
+  function recordAssignment(
+    staffId: string,
+    demandId: string,
+    hours: number,
+    skillMatch: number,
+    source: "free" | "released",
+  ) {
+    const key = `${demandId}\u0000${staffId}`;
+    const current = assignmentParts.get(key) ?? {
+      staffId,
+      demandId,
+      hours: 0,
+      freeHours: 0,
+      releasedHours: 0,
+      skillMatch,
+    };
+    current.hours += hours;
+    if (source === "free") current.freeHours += hours;
+    else current.releasedHours += hours;
+    assignmentParts.set(key, current);
+  }
+
+  for (const demand of demands) {
+    let hoursShort = capacityHours(demand.hoursNeeded);
+    if (hoursShort <= CAPACITY_EPSILON) continue;
+
+    while (hoursShort > CAPACITY_EPSILON) {
+      const candidates = [...staffState.values()]
+        .map((person) => ({
+          person,
+          skillMatch: capacitySkillMatch(demand.requiredSkills, person.skills),
+        }))
+        .filter(({ person, skillMatch }) => person.freeHours > CAPACITY_EPSILON && skillMatch > 0)
+        .sort(
+          (a, b) =>
+            b.skillMatch - a.skillMatch ||
+            b.person.freeHours - a.person.freeHours ||
+            a.person.id.localeCompare(b.person.id),
+        );
+      const selected = candidates[0];
+      if (!selected) break;
+      const assigned = Math.min(hoursShort, selected.person.freeHours);
+      selected.person.freeHours -= assigned;
+      hoursShort -= assigned;
+      recordAssignment(selected.person.id, demand.id, assigned, selected.skillMatch, "free");
+    }
+
+    while (hoursShort > CAPACITY_EPSILON) {
+      const candidates = [...staffState.values()]
+        .map((person) => ({
+          person,
+          skillMatch: capacitySkillMatch(demand.requiredSkills, person.skills),
+          releasableHours: blocks
+            .filter((block) => block.staffId === person.id)
+            .reduce((total, block) => total + block.remainingHours, 0),
+        }))
+        .filter(({ releasableHours, skillMatch }) => releasableHours > CAPACITY_EPSILON && skillMatch > 0)
+        .sort(
+          (a, b) =>
+            b.skillMatch - a.skillMatch ||
+            b.releasableHours - a.releasableHours ||
+            a.person.id.localeCompare(b.person.id),
+        );
+      const selected = candidates[0];
+      if (!selected) break;
+
+      const selectedBlocks = blocks
+        .filter(
+          (block) =>
+            block.staffId === selected.person.id && block.remainingHours > CAPACITY_EPSILON,
+        )
+        .sort(
+          (a, b) =>
+            a.switchingCostHours - b.switchingCostHours ||
+            a.projectId.localeCompare(b.projectId) ||
+            a.index - b.index,
+        );
+
+      for (const block of selectedBlocks) {
+        if (hoursShort <= CAPACITY_EPSILON) break;
+        const released = Math.min(hoursShort, block.remainingHours);
+        block.remainingHours -= released;
+        hoursShort -= released;
+        recordAssignment(selected.person.id, demand.id, released, selected.skillMatch, "released");
+
+        const releaseKey = `${block.staffId}\u0000${block.projectId}`;
+        const existingRelease = releases.get(releaseKey) ?? {
+          staffId: block.staffId,
+          fromProjectId: block.projectId,
+          hours: 0,
+        };
+        existingRelease.hours += released;
+        releases.set(releaseKey, existingRelease);
+
+        if (!block.costCounted) {
+          switchingCost += block.switchingCostHours;
+          block.costCounted = true;
+        }
+      }
+    }
+
+    if (hoursShort > CAPACITY_EPSILON) {
+      unmet.push({
+        demandId: demand.id,
+        hoursShort: roundedHours(hoursShort),
+        reason: "No qualified capacity remains",
+      });
+    }
+  }
+
+  const assignments = [...assignmentParts.values()].map((item) => {
+    const source =
+      item.freeHours > CAPACITY_EPSILON && item.releasedHours > CAPACITY_EPSILON
+        ? `${roundedHours(item.freeHours)}h free, then ${roundedHours(item.releasedHours)}h released`
+        : item.releasedHours > CAPACITY_EPSILON
+          ? `${roundedHours(item.releasedHours)}h released after free capacity was exhausted`
+          : `${roundedHours(item.freeHours)}h from free capacity`;
+    return {
+      staffId: item.staffId,
+      demandId: item.demandId,
+      hours: roundedHours(item.hours),
+      skillMatch: item.skillMatch,
+      rationale: `${Math.round(item.skillMatch * 100)}% required-skill match; ${source}.`,
+    };
+  });
+
+  return {
+    assignments,
+    released: [...releases.values()].map((item) => ({ ...item, hours: roundedHours(item.hours) })),
+    unmet,
+    totalSwitchingCostHours: Number(switchingCost.toFixed(1)),
+  };
 }
