@@ -1,4 +1,4 @@
-# Verge AI Final Build Design
+# SecondKey Final Build Design
 
 ## Goal
 
@@ -12,7 +12,7 @@ The Runner receives a service bundle. Local mode uses ADK's `InMemorySessionServ
 
 Capacity reservation is a separate deterministic state machine with one version per staff member. A reservation succeeds only when the caller's version matches and sufficient hours remain. Releases restore hours and advance the version. The UI owns a local instance for the Demo environment; server execution remains `external_write: false`.
 
-The ten-Unit registry is generated from `BUSINESS_UNITS`, committed as a deployable artifact inside `agent/`, and returned by `GET /registry`. When Google Cloud Agent Registry configuration exists, the service may also query the remote catalog; local entries remain the source of truth for the demo because the current TypeScript SDK exposes read/query methods, not publish methods.
+The ten-Unit registry is generated from `BUSINESS_UNITS`, committed as a deployable artifact inside `agent/`, and returned by `GET /registry`. Only an explicit `CONTEXTOPS_CLOUD_REGISTRY=true` enables remote catalog queries; Vertex model project/location settings alone do not. Local entries remain the source of truth for the demo because the current TypeScript SDK exposes read/query methods, not publish methods.
 
 Audit records are written once, rendered as OpenTelemetry spans, and exported from `GET /audit.json` and `GET /audit.csv`. Every record includes time, component, actor, role, message, evidence IDs, task ID, and policy outcome. CSV cells beginning with `=`, `+`, `-`, or `@` are prefixed to prevent spreadsheet formula execution.
 

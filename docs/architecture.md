@@ -26,7 +26,7 @@ flowchart LR
 flowchart LR
     I["Fixture inbound"] --> X["Deterministic identity, duplicate, injection and account gates"]
     X -->|"queued only"| R["Google ADK Runner"]
-    R --> L["Gemini extraction"]
+    R --> L["Gemini 3.7 Flash extraction"]
     L --> F["score_priority FunctionTool"]
     F --> D["Deterministic priority state"]
     R --> S["Session Service + Memory Service"]
@@ -38,20 +38,39 @@ flowchart LR
     C["Optimistic capacity versions"] --> UI
 ```
 
+## Intended Google Cloud deployment
+
+```mermaid
+flowchart LR
+    UI["Hosted UI"] --> CR["Cloud Run agent\naustralia-southeast1"]
+    CR --> SA["Dedicated runtime service account\nADC · no Gemini key"]
+    SA --> VA["Vertex AI\nGemini 3.7 Flash · global"]
+    CR --> MEM["ADK in-memory session + memory\nverified locally; not persistent"]
+    CR --> TRACE["Cloud Trace / Logging\nOTel policy and audit spans"]
+    PREP["Vertex Session + Memory Bank"] -. "prepared, not deployed or verified" .-> CR
+```
+
+Cloud Run placement and Gemini inference location are separate facts. The
+service is intended for `australia-southeast1`; Gemini uses the Vertex AI
+`global` endpoint. The project makes no claim that model inference or model
+processing remains in Australia.
+
 The LLM is deliberately outside every authority boundary. It extracts language
 features and requests a tool call; server state supplies the priority and policy
 result. `external_write` is false at the tool, session, audit, HTTP, and UI
 boundaries.
 
 Local Session and Memory services make the full workflow reproducible without a
-cloud account. Vertex services are selected only with complete project,
-location, Agent Engine ID, and Application Default Credentials. Partial cloud
-configuration fails closed.
+cloud account. The Cloud Run deployment intentionally keeps this in-memory
+state until Vertex persistence is independently deployed and verified. Prepared
+Vertex services are selected only with complete project, location, Agent Engine
+ID, and Application Default Credentials; partial configuration fails closed.
 
 The registry generator projects the canonical Unit list into identical frontend
-and agent JSON. Google ADK 2.0's Cloud Agent Registry client is used as an
-optional read/query adapter; publishing lifecycle resources remains an explicit
-cloud deployment step and is not simulated locally.
+and agent JSON. Google ADK 2.0's Cloud Agent Registry client is an explicitly
+enabled read/query adapter; Vertex model project/location variables never turn
+it on implicitly. Publishing lifecycle resources remains an explicit cloud
+deployment step and is not simulated locally.
 
 ## Shared core contracts
 

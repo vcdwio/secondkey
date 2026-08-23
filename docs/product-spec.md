@@ -1,4 +1,4 @@
-# Verge AI - The Fortified Enterprise Fleet — Product Spec
+# SecondKey — Product Spec
 
 ## Product outcome
 

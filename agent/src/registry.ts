@@ -28,16 +28,17 @@ export function createRegistryService(
   env: Record<string, string | undefined>,
   remoteRegistry?: Pick<AgentRegistry, "listAgents">,
 ) {
-  const projectId = env.GOOGLE_CLOUD_PROJECT;
-  const location = env.GOOGLE_CLOUD_LOCATION;
-  if (Boolean(projectId) !== Boolean(location)) {
+  const cloudRegistryEnabled = env.CONTEXTOPS_CLOUD_REGISTRY?.trim() === "true";
+  const projectId = env.GOOGLE_CLOUD_PROJECT?.trim();
+  const location = env.GOOGLE_CLOUD_LOCATION?.trim();
+  if (cloudRegistryEnabled && (!projectId || !location)) {
     throw new Error(
       "Cloud Agent Registry requires both GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION",
     );
   }
 
   const cloudRegistry =
-    projectId && location
+    cloudRegistryEnabled && projectId && location
       ? (remoteRegistry ?? new AgentRegistry({ projectId, location }))
       : undefined;
 

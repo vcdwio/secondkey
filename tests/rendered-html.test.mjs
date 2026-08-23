@@ -13,13 +13,15 @@ async function render() {
   );
 }
 
-test("server-renders the Verge AI portfolio command surface", async () => {
+test("server-renders the SecondKey governed-agent command surface", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>Verge AI - The Fortified Enterprise Fleet<\/title>/i);
+  assert.match(html, /<title>SecondKey — Governed Enterprise Agents<\/title>/i);
+  assert.match(html, /Autonomy until it matters\./);
+  assert.match(html, /The agent holds the first key\. Irreversible actions wait for yours\./);
   assert.match(html, /Seven clients\. Three available people\. One decision\./);
   assert.match(html, /BlueHarbor Logistics/);
   assert.match(html, /Elevate Learning/);

@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import dotenv from "dotenv";
 
-import { createAdkTriageRuntime } from "../src/adk.js";
+import { createAdkTriageRuntime, resolveGeminiAccess } from "../src/adk.js";
 import { resolveAgentRoot } from "../src/config.js";
 import { loadFixtureContext, loadRawInbound, resolveRepoRoot } from "../src/inbound.js";
 import { createAgentServices } from "../src/services.js";
@@ -12,18 +12,13 @@ import { processEmailTriage } from "../src/triage.js";
 const agentRoot = resolveAgentRoot(path.dirname(fileURLToPath(import.meta.url)));
 dotenv.config({ path: path.join(agentRoot, ".env"), quiet: true });
 
-const apiKey = process.env.GEMINI_API_KEY?.trim();
-if (!apiKey) {
-  throw new Error("Create agent/.env from agent/.env.example and set GEMINI_API_KEY before running smoke");
-}
-
 const repoRoot = resolveRepoRoot();
 const inbound = loadRawInbound(repoRoot);
 const context = loadFixtureContext(repoRoot);
 const services = createAgentServices(process.env);
 const runtime = createAdkTriageRuntime({
-  apiKey,
-  model: process.env.GEMINI_MODEL ?? "gemini-3.5-flash",
+  access: resolveGeminiAccess(process.env),
+  model: process.env.GEMINI_MODEL ?? "gemini-3.7-flash",
   services,
 });
 const requester = runtime.requestScorePriority;
@@ -46,7 +41,7 @@ if (byId.get("EM-001")?.tool_call?.name !== "score_priority") {
 }
 
 console.log(JSON.stringify({
-  model: process.env.GEMINI_MODEL ?? "gemini-3.5-flash",
+  model: process.env.GEMINI_MODEL ?? "gemini-3.7-flash",
   runtime: "google-adk",
   state_backend: services.mode,
   external_write: false,

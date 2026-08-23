@@ -4,7 +4,12 @@ import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import express from "express";
 
-import { CONTEXTOPS_APP_NAME, createAdkTriageRuntime } from "./adk.js";
+import {
+  CONTEXTOPS_APP_NAME,
+  createAdkTriageRuntime,
+  describeGeminiAccess,
+  resolveGeminiAccess,
+} from "./adk.js";
 import { resolveAgentRoot } from "./config.js";
 import { loadFixtureContext, loadRawInbound, resolveRepoRoot } from "./inbound.js";
 import { REGISTRY_ENTRIES, createRegistryService } from "./registry.js";
@@ -44,18 +49,24 @@ export function createApp(dependencies: AppDependencies = {}) {
   const services = dependencies.services ?? createAgentServices(env);
   const registryService = dependencies.registryService ?? createRegistryService(env);
   const auditStore = dependencies.auditStore ?? new AuditStore();
-  const model = env.GEMINI_MODEL ?? "gemini-3.5-flash";
+  const model = env.GEMINI_MODEL ?? "gemini-3.7-flash";
+  const modelAccess = describeGeminiAccess(env);
   const mode = telemetryMode(env);
   let adkRequester: ToolCallRequester | undefined = dependencies.requestToolCall;
 
   const getRequester = () => {
     if (adkRequester) return adkRequester;
-    const apiKey = env.GEMINI_API_KEY?.trim();
-    if (!apiKey) {
-      throw new HttpError(503, "GEMINI_API_KEY is not configured; triage is unavailable");
+    try {
+      adkRequester = createAdkTriageRuntime({
+        access: resolveGeminiAccess(env),
+        model,
+        services,
+      }).requestScorePriority;
+      return adkRequester;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Gemini access is unavailable";
+      throw new HttpError(503, message);
     }
-    adkRequester = createAdkTriageRuntime({ apiKey, model, services }).requestScorePriority;
-    return adkRequester;
   };
 
   const app = express();
@@ -84,6 +95,8 @@ export function createApp(dependencies: AppDependencies = {}) {
       runtime: "google-adk",
       state_backend: services.mode,
       model,
+      model_backend: modelAccess.backend,
+      model_location: modelAccess.location,
       registry_count: REGISTRY_ENTRIES.length,
       telemetry_mode: mode,
     });
@@ -188,6 +201,6 @@ if (isEntryPoint) {
   const port = Number(process.env.PORT ?? 3001);
   await initializeTelemetry(process.env);
   createApp().listen(port, () => {
-    console.log(`Verge AI Agent listening on ${port} · external_write=false`);
+    console.log(`SecondKey Agent listening on ${port} · external_write=false`);
   });
 }

@@ -317,7 +317,7 @@ export function ContextOpsControlRoom() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `verge-audit-${PORTFOLIO.taskId}.json`;
+    link.download = `secondkey-audit-${PORTFOLIO.taskId}.json`;
     link.click();
     URL.revokeObjectURL(url);
     addEvent({
@@ -342,11 +342,11 @@ export function ContextOpsControlRoom() {
       <aside className="sidebar">
         <div className="brand-lockup">
           <div className="brand-mark" aria-hidden="true">
-            V
+            S
           </div>
           <div>
-            <strong>Verge AI</strong>
-            <span>The Fortified Enterprise Fleet</span>
+            <strong>SecondKey</strong>
+            <span>Governed Enterprise Agents</span>
           </div>
         </div>
 
@@ -412,8 +412,9 @@ export function ContextOpsControlRoom() {
       <section className="workspace">
         <header className="topbar">
           <div>
-            <div className="eyebrow">Monday · 08:05 · Portfolio command</div>
+            <div className="eyebrow">Autonomy until it matters.</div>
             <h1>{VIEW_TITLES[view]}</h1>
+            <p>The agent holds the first key. Irreversible actions wait for yours.</p>
             <p>
               Verge Consulting · {role} · {profile.clientCount} accounts in scope
             </p>

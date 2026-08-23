@@ -1,6 +1,8 @@
-# Verge AI - The Fortified Enterprise Fleet
+# SecondKey
 
-A fortified enterprise operations demo for Verge Consulting: ten customer-facing business Units, one shared deterministic ContextOps core, and a real Google ADK + Gemini extraction runtime. Demo stays write-disabled; Live remains locked.
+**Autonomy until it matters.** The agent holds the first key; irreversible actions wait for yours.
+
+SecondKey is a governed enterprise-agent demo for Verge Consulting: ten customer-facing business Units, one shared deterministic ContextOps core, and a real Google ADK + Gemini extraction runtime. Reversible work can advance automatically; consequential actions stop at a human approval boundary. Demo stays write-disabled and Live remains locked.
 
 ## Included
 
@@ -50,7 +52,7 @@ node scripts/validate_pack.mjs
 
 ## Google ADK agent
 
-The server-side agent uses Google ADK 2.0 and Gemini. Gemini extracts a summary,
+The server-side agent uses Google ADK 2.0 and Gemini 3.7 Flash. Gemini extracts a summary,
 intent and explicit urgency phrases, then must call `score_priority`; identity,
 cross-account access, duplicate detection, quarantine, authorization, money,
 staffing and priority remain deterministic decisions.
@@ -75,18 +77,31 @@ Agent endpoints:
 - `GET /healthz` — runtime, state backend, model, registry count, telemetry mode.
 - `POST /triage` — fixture email triage with deterministic safety gates.
 - `GET /sessions/:id?user_id=<id>` — ADK session recovery.
-- `GET /registry` — synchronized ten-Unit registry plus optional Cloud discovery count.
+- `GET /registry` — synchronized ten-Unit registry plus an explicitly enabled Cloud discovery count.
 - `GET /audit.json` and `GET /audit.csv` — write-disabled compliance exports.
+
+`GET /healthz` reports `model`, `model_backend`, and `model_location`; the hosted
+proof is accepted only when these read `gemini-3.7-flash`, `vertex`, and
+`global`, followed by a successful real triage and matching cloud evidence.
 
 ### State and telemetry modes
 
-Local defaults are `CONTEXTOPS_STATE_BACKEND=memory` and
-`CONTEXTOPS_TELEMETRY=console`. For persistent Vertex state, set
+Local defaults use the Gemini Developer API via `GEMINI_API_KEY`,
+`CONTEXTOPS_STATE_BACKEND=memory`, and `CONTEXTOPS_TELEMETRY=console`.
+Cloud Run sets `GOOGLE_GENAI_USE_VERTEXAI=true`, `GOOGLE_CLOUD_PROJECT`, and
+`GOOGLE_CLOUD_LOCATION=global`; the ADK then uses the Cloud Run service
+account's Application Default Credentials and no Gemini key is injected.
+
+For persistent Vertex state, set
 `CONTEXTOPS_STATE_BACKEND=vertex`, `GOOGLE_CLOUD_PROJECT`,
 `GOOGLE_CLOUD_LOCATION`, and `VERTEX_AGENT_ENGINE_ID`, then run with Application
 Default Credentials. ADK 2.0 does not accept the Gemini API key for Vertex Agent
 Engine sessions or memory; the service fails closed instead of silently falling
 back to memory.
+
+Cloud Agent Registry discovery is independently prepared and defaults off. Set
+`CONTEXTOPS_CLOUD_REGISTRY=true` only after that cloud resource is deployed and
+verified; model project/location variables alone never enable it.
 
 Set `CONTEXTOPS_TELEMETRY=gcp` only in a Google-authenticated runtime. Set
 `CONTEXTOPS_UI_ORIGIN` to the exact hosted frontend origin for cross-origin
@@ -99,26 +114,58 @@ The root `Dockerfile` packages the agent, shared authority rules, generated
 portfolio, and required fixture data. Local preflight:
 
 ```bash
-docker build -t contextops-agent .
-docker run --rm -p 8080:8080 --env-file agent/.env contextops-agent
+docker build -t secondkey-agent .
+docker run --rm -p 8080:8080 --env-file agent/.env secondkey-agent
 curl http://127.0.0.1:8080/healthz
 ```
 
-Cloud deployment creates billable external resources, so it is intentionally
-not run without explicit authorization. After approval, from the repository
-root:
+Cloud deployment creates billable external resources. Use a dedicated runtime
+service account instead of the Compute Engine default account. From the
+repository root:
 
 ```bash
-gcloud run deploy contextops-agent \
+gcloud iam service-accounts create secondkey-runner \
+  --display-name="SecondKey Cloud Run runtime"
+
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:secondkey-runner@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/aiplatform.user"
+
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:secondkey-runner@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/cloudtrace.agent"
+
+gcloud run deploy secondkey-agent \
   --source . \
   --region australia-southeast1 \
   --project YOUR_PROJECT_ID \
-  --set-env-vars CONTEXTOPS_STATE_BACKEND=memory,CONTEXTOPS_TELEMETRY=gcp \
-  --set-secrets GEMINI_API_KEY=gemini-api-key:latest
+  --service-account secondkey-runner@YOUR_PROJECT_ID.iam.gserviceaccount.com \
+  --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,GEMINI_MODEL=gemini-3.7-flash,CONTEXTOPS_STATE_BACKEND=memory,CONTEXTOPS_TELEMETRY=gcp
 ```
 
-Do not put the key directly in the command. Verify the returned `.run.app` URL
-with `/healthz` before wiring `NEXT_PUBLIC_AGENT_URL`.
+Cloud Run executes in `australia-southeast1`; Gemini inference uses the Vertex
+AI `global` endpoint. This configuration does not claim Australian model
+processing or data residency. Keep the service private until its invocation
+policy is chosen, then verify `/healthz`, one real `/triage` request, and the
+corresponding Vertex/Cloud trace before wiring `NEXT_PUBLIC_AGENT_URL`.
+
+For a private service, verify with an identity token rather than making the
+cost-bearing triage endpoint public:
+
+```bash
+SERVICE_URL="$(gcloud run services describe secondkey-agent \
+  --region australia-southeast1 \
+  --project YOUR_PROJECT_ID \
+  --format='value(status.url)')"
+IDENTITY_TOKEN="$(gcloud auth print-identity-token)"
+
+curl -H "Authorization: Bearer ${IDENTITY_TOKEN}" "${SERVICE_URL}/healthz"
+curl -X POST \
+  -H "Authorization: Bearer ${IDENTITY_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"email_ids":["EM-001"]}' \
+  "${SERVICE_URL}/triage"
+```
 
 ## Safety boundary
 

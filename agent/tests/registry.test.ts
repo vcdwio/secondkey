@@ -26,9 +26,38 @@ test("local registry contains exactly one synchronized entry for every business 
   assert.deepEqual(response.cloud, { enabled: false, discovered: 0 });
 });
 
-test("partial cloud registry configuration fails closed", () => {
+test("Vertex model configuration does not implicitly enable Cloud Agent Registry", async () => {
+  const response = await createRegistryService({
+    GOOGLE_CLOUD_PROJECT: "demo-project",
+    GOOGLE_CLOUD_LOCATION: "global",
+  }).list();
+
+  assert.deepEqual(response.cloud, { enabled: false, discovered: 0 });
+});
+
+test("explicit Cloud Agent Registry configuration discovers remote agents", async () => {
+  const response = await createRegistryService(
+    {
+      CONTEXTOPS_CLOUD_REGISTRY: "true",
+      GOOGLE_CLOUD_PROJECT: "demo-project",
+      GOOGLE_CLOUD_LOCATION: "global",
+    },
+    {
+      async listAgents() {
+        return { agents: [{ name: "agents/one" }, { name: "agents/two" }] };
+      },
+    },
+  ).list();
+
+  assert.deepEqual(response.cloud, { enabled: true, discovered: 2 });
+});
+
+test("partial explicitly enabled cloud registry configuration fails closed", () => {
   assert.throws(
-    () => createRegistryService({ GOOGLE_CLOUD_PROJECT: "demo-project" }),
+    () => createRegistryService({
+      CONTEXTOPS_CLOUD_REGISTRY: "true",
+      GOOGLE_CLOUD_PROJECT: "demo-project",
+    }),
     /Cloud Agent Registry requires both GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION/,
   );
 });

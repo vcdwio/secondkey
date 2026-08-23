@@ -11,11 +11,11 @@ export function resolveAgentRoot(moduleDirectory: string) {
     const manifestPath = path.join(candidate, "package.json");
     if (fs.existsSync(manifestPath)) {
       const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as PackageManifest;
-      if (manifest.name === "verge-ai-agent") return candidate;
+      if (manifest.name === "secondkey-agent") return candidate;
     }
     const parent = path.dirname(candidate);
     if (parent === candidate) break;
     candidate = parent;
   }
-  throw new Error("Unable to locate the Verge AI agent root");
+  throw new Error("Unable to locate the SecondKey agent root");
 }

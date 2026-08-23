@@ -70,6 +70,8 @@ test("health and registry expose the fortified runtime without writes", async ()
       runtime: "google-adk",
       state_backend: "memory",
       model: "gemini-test-model",
+      model_backend: "developer",
+      model_location: "developer-api",
       registry_count: 10,
       telemetry_mode: "off",
     });

@@ -2,14 +2,15 @@
 
 ## Unreleased — Product identity
 
-- Renamed the product to **Verge AI - The Fortified Enterprise Fleet**.
+- Renamed the product to **SecondKey** with the promise **Autonomy until it matters.**
 - Kept Verge Consulting as the fictional demo tenant and ContextOps as the shared internal operating architecture.
 - Replaced the prewritten capacity answer with deterministic `allocateCapacity()` rules: priority, SLA, skill coverage, available hours, movable blocks and switching cost.
 - Added four allocation tests, including 100 identical runs, the real 12-hour pack outcome and an honest reduced-staff shortfall.
 - Added optimistic capacity reservations with per-staff versions, deterministic IDs, conflict/shortfall responses, release, reset, and 1,000 seeded concurrency checks.
 - Replaced direct Gemini wiring with a Google ADK `Runner`, forced `FunctionTool`, Session/Memory services, and a pre-tool `SecurityPlugin` backed by the same authority matrix as the UI.
-- Added a synchronized ten-Unit registry, optional Cloud discovery adapter, OTel audit spans, safe JSON/CSV audit exports, and complete HTTP endpoints.
+- Added a synchronized ten-Unit registry, explicitly enabled Cloud discovery adapter, OTel audit spans, safe JSON/CSV audit exports, and complete HTTP endpoints.
 - Added Cloud Run container/source configuration, cross-origin frontend health wiring, and a no-claims submission/deployment checklist.
+- Added dual Gemini authentication: local Developer API keys and keyless Vertex AI ADC on Cloud Run, with Gemini 3.7 Flash on the `global` model endpoint.
 
 ## 0.2.0 — 2026-08-22 · Governed demo
 

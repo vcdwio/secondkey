@@ -19,6 +19,45 @@ import type {
 
 export const CONTEXTOPS_APP_NAME = "verge-contextops";
 
+export type GeminiAccess =
+  | { backend: "developer"; apiKey: string }
+  | { backend: "vertex"; project: string; location: string };
+
+function vertexRequested(env: Record<string, string | undefined>) {
+  return env.GOOGLE_GENAI_USE_VERTEXAI?.trim().toLowerCase() === "true";
+}
+
+export function describeGeminiAccess(env: Record<string, string | undefined>) {
+  if (vertexRequested(env)) {
+    return {
+      backend: "vertex" as const,
+      location: env.GOOGLE_CLOUD_LOCATION?.trim() || "unconfigured",
+    };
+  }
+  return { backend: "developer" as const, location: "developer-api" as const };
+}
+
+export function resolveGeminiAccess(
+  env: Record<string, string | undefined>,
+): GeminiAccess {
+  if (vertexRequested(env)) {
+    const project = env.GOOGLE_CLOUD_PROJECT?.trim();
+    const location = env.GOOGLE_CLOUD_LOCATION?.trim();
+    if (!project || !location) {
+      throw new Error(
+        "Vertex Gemini requires GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION",
+      );
+    }
+    return { backend: "vertex", project, location };
+  }
+
+  const apiKey = env.GEMINI_API_KEY?.trim();
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not configured; triage is unavailable");
+  }
+  return { backend: "developer", apiKey };
+}
+
 const scorePriorityParameters = z.object({
   summary: z.string().min(1),
   intent: z.string().min(1),
@@ -49,21 +88,28 @@ export function createScorePriorityTool() {
 }
 
 export function createAdkTriageRuntime({
-  apiKey,
+  access,
   model,
   services,
 }: {
-  apiKey: string;
+  access: GeminiAccess;
   model: string;
   services: AgentServiceBundle;
 }) {
-  if (!apiKey.trim()) throw new Error("GEMINI_API_KEY is required for real Gemini triage");
   const scorePriority = createScorePriorityTool();
+  const gemini = access.backend === "vertex"
+    ? new Gemini({
+        model,
+        vertexai: true,
+        project: access.project,
+        location: access.location,
+      })
+    : new Gemini({ model, apiKey: access.apiKey });
   const rootAgent = new LlmAgent({
     name: "contextops_intake",
-    model: new Gemini({ model, apiKey }),
+    model: gemini,
     instruction: [
-      "You are the extraction stage of Verge AI ContextOps.",
+      "You are the extraction stage of SecondKey ContextOps.",
       "For every message, call score_priority exactly once.",
       "Extract only a factual summary, operational intent, and explicit urgency phrases.",
       "Never assign priority, identity, tenant, permission, money, staffing, or an external action.",
