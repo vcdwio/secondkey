@@ -42,7 +42,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    UI["Hosted UI"] --> CR["Cloud Run agent\naustralia-southeast1"]
+    UI["Hosted UI"] --> CR["Cloud Run agent\nAustralia region target"]
     CR --> SA["Dedicated runtime service account\nADC · no Gemini key"]
     SA --> VA["Vertex AI\nGemini 3.7 Flash · global"]
     CR --> MEM["ADK in-memory session + memory\nverified locally; not persistent"]
@@ -51,7 +51,7 @@ flowchart LR
 ```
 
 Cloud Run placement and Gemini inference location are separate facts. The
-service is intended for `australia-southeast1`; Gemini uses the Vertex AI
+service targets an Australia region; Gemini uses the Vertex AI
 `global` endpoint. The project makes no claim that model inference or model
 processing remains in Australia.
 

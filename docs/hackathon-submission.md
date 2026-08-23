@@ -17,8 +17,8 @@
 | Local container execution | Configuration complete; runtime unavailable | verification machine has no `docker` command |
 | Cloud CLI preflight | Not available locally | verification machine has no `gcloud` command |
 
-The intended hosted split is explicit: Cloud Run executes in
-`australia-southeast1`, while Gemini 3.7 Flash inference uses the Vertex AI
+The intended hosted split is explicit: Cloud Run targets an Australia region,
+while Gemini 3.7 Flash inference uses the Vertex AI
 `global` endpoint through the runtime service account's ADC. No Australian
 model-processing or data-residency claim is made.
 

@@ -143,9 +143,10 @@ gcloud run deploy secondkey-agent \
   --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,GEMINI_MODEL=gemini-3.7-flash,CONTEXTOPS_STATE_BACKEND=memory,CONTEXTOPS_TELEMETRY=gcp
 ```
 
-Cloud Run executes in `australia-southeast1`; Gemini inference uses the Vertex
-AI `global` endpoint. This configuration does not claim Australian model
-processing or data residency. Keep the service private until its invocation
+Cloud Run targets an Australia region; Gemini inference uses the Vertex AI
+`global` endpoint. The CLI command above retains the provider's exact region
+identifier. This configuration does not claim Australian model processing or
+data residency. Keep the service private until its invocation
 policy is chosen, then verify `/healthz`, one real `/triage` request, and the
 corresponding Vertex/Cloud trace before wiring `NEXT_PUBLIC_AGENT_URL`.
 
