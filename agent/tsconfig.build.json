@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["src/**/*.ts", "../lib/contextops/authority.ts"],
+  "exclude": ["tests/**/*.ts", "scripts/**/*.ts"]
+}

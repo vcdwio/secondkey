@@ -7,7 +7,7 @@
     "node": ">=24.13.0"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "start": "node dist/agent/src/server.js",
     "dev": "tsx watch src/server.ts",
     "smoke": "tsx scripts/smoke.ts",
@@ -15,6 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@google-cloud/opentelemetry-cloud-trace-exporter": "3.1.0",
     "@google/adk": "2.0.0",
     "@google/genai": "2.15.0",
     "@opentelemetry/api": "1.9.0",

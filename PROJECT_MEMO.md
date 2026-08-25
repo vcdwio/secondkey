@@ -24,7 +24,7 @@
 - Approval reserves 12 derived staff-hours with optimistic versions; rollback releases them without overselling.
 - OTel spans, JSON audit, safe CSV audit, and the six HTTP endpoints are implemented locally.
 - Before the SecondKey/Vertex change, 32 root tests and 29 agent tests passed with both TypeScript checks, ESLint, fixture validation, rendered HTTP, production Agent HTTP, browser interactions, and a Developer API smoke request. The Gemini 3.7 Vertex path still requires a deployed request and matching cloud evidence.
-- Current local verification: 32 root tests and 34 agent tests pass (66 total), with both TypeScript checks, ESLint, fixture validation, production builds, rendered HTTP, production health, and desktop/mobile browser QA.
+- Current local verification: 35 root tests and 34 agent tests pass (69 total), with both TypeScript checks, ESLint, fixture validation, production builds, rendered HTTP, production health, and desktop/mobile browser QA.
 - Production dependency audits report zero known vulnerabilities for both root and agent after narrow ADK transitive overrides.
 - Browser QA passed at desktop and 390px mobile width with no horizontal overflow and no console warnings/errors.
-- Docker and gcloud are not installed on the verification machine, so container execution and Cloud Run deployment remain honestly unverified.
+- The production container builds and starts, and Cloud Run revisions are Ready in two Australia regions. The generated `run.app` endpoints still return a Google-front 404 before reaching the container, so hosted `/healthz`, `/triage`, and live Vertex evidence remain unverified.

@@ -1,6 +1,7 @@
 FROM node:24.18.0-slim AS build
 
 WORKDIR /app
+COPY package.json ./package.json
 COPY agent/package.json agent/package-lock.json ./agent/
 RUN npm ci --prefix agent
 

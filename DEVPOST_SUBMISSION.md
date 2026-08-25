@@ -140,7 +140,7 @@ we have not verified end to end.
 - **OpenTelemetry** — local audit spans carrying actor, role, evidence ids and policy
   outcome; the Google Cloud exporter is configured but not yet evidenced online
 - **TypeScript / React / Vite** — the operator control room, six views
-- **Node test runner and ESLint** — 66 automated tests and zero lint errors. A prior
+- **Node test runner and ESLint** — 69 automated tests and zero lint errors. A prior
   axe-core audit recorded zero WCAG 2.1 AA violations across seven surfaces.
 
 ---
@@ -189,7 +189,7 @@ look like code errors. Costly to diagnose the first time; now documented in
   cross-account reach, plus a pre-execution ADK policy check for protected tool calls.
 - Rollback that admits its own limits: nine changes restore cleanly, and the two that
   cannot be undone are labelled as such rather than pretended away.
-- 66 automated tests, zero lint errors, a prior seven-surface axe audit with zero
+- 69 automated tests, zero lint errors, a prior seven-surface axe audit with zero
   violations, and a body-text floor of 12px — the governance story is legible on a
   projector, which is where it actually has to work.
 

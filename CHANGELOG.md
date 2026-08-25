@@ -11,6 +11,8 @@
 - Added a synchronized ten-Unit registry, explicitly enabled Cloud discovery adapter, OTel audit spans, safe JSON/CSV audit exports, and complete HTTP endpoints.
 - Added Cloud Run container/source configuration, cross-origin frontend health wiring, and a no-claims submission/deployment checklist.
 - Added dual Gemini authentication: local Developer API keys and keyless Vertex AI ADC on Cloud Run, with Gemini 3.7 Flash on the `global` model endpoint.
+- Split the agent's production TypeScript build from tests and local smoke scripts, preserved the root ESM boundary in Docker, and added the ADK-required Cloud Trace exporter.
+- Added three production-packaging regression tests, bringing the verified local total to 69.
 
 ## 0.2.0 — 2026-08-22 · Governed demo
 
