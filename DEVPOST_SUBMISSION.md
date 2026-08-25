@@ -93,8 +93,10 @@ before the model is called.
 
 The hosted configuration targets Vertex AI through the Cloud Run runtime service
 account's Application Default Credentials, so no Gemini key is injected into the
-service. That Vertex path is configured in code but is not described as verified until
-one deployed `/triage` request and matching cloud evidence exist.
+service. A successful Google Cloud Build smoke used the same ADK code and ADC path to
+call Vertex AI and exercise four governed triage cases. The Cloud Run-to-Vertex path is
+still described separately because Google's public route currently returns 404 before
+the request reaches the container.
 
 Approval is a separate deterministic application workflow. `evaluateAuthority()`
 returns the exact hours, spend, communication and account limits that were exceeded;
@@ -120,16 +122,20 @@ we have not verified end to end.
 
 ## Technologies used
 
-- **Gemini 3.7 Flash / Vertex AI configuration** — extraction only. The intended
+- **Gemini 3.7 Flash / Vertex AI** — extraction only. A Google Cloud Build smoke
+  successfully called Vertex AI through service-account ADC using the submitted ADK
+  code. The intended
   Cloud Run path uses runtime service-account ADC
   (`GOOGLE_GENAI_USE_VERTEXAI=true`, model location `global`); local development uses
-  a Gemini API key in an untracked `agent/.env`. The Vertex path still needs a live
-  request and matching log evidence.
+  a Gemini API key in an untracked `agent/.env`. Cloud Run endpoint invocation still
+  needs proof after Google's front-end 404 is resolved.
 - **Google ADK for TypeScript** (`@google/adk` v2) — `Runner`, one `LlmAgent`, one
   `FunctionTool`, in-memory session/memory services, and `SecurityPlugin`
-- **Google Cloud Run configuration** — source deployment targets an Australia region.
+- **Google Cloud Run** — source deployments produced Ready revisions in two Australia
+  regions.
   Model inference uses Vertex's `global` endpoint, so we make no claim about where
-  inference or data resides. Deployment is pending billing.
+  inference or data resides. The generated public endpoints currently return a
+  Google-front 404 before reaching the containers, so they are not yet submission-ready.
 - **Vertex AI Session Service and Memory Bank** — wired behind
   `CONTEXTOPS_STATE_BACKEND`, so cross-session context switches on with one variable
   and a provisioned Agent Engine id. The submitted build ships with in-memory state;

@@ -4,9 +4,11 @@
 
 ## Submission architecture
 
-Solid lines below are implemented and locally verified. Dashed lines are the intended
-Google Cloud deployment and must not be presented as live until a real request and its
-matching cloud evidence exist.
+Solid lines below are implemented and locally verified. The Google Cloud deployment is
+partially live-verified: Cloud Run revisions are Ready, and a Cloud Build smoke run used
+service-account ADC to call Vertex AI successfully. The Cloud Run public route is not
+yet verified because Google's front end currently returns 404 before reaching the
+container.
 
 ```mermaid
 flowchart TB
@@ -41,7 +43,7 @@ flowchart TB
     DATA --> GATES
     TOOL --> AUDIT
 
-    subgraph cloud["Google Cloud path — configured, not yet live-verified"]
+    subgraph cloud["Google Cloud path — partially live-verified"]
         CR["Cloud Run target<br/>Australia region"]
         SA["Dedicated service account<br/>Application Default Credentials"]
         VAI["Vertex AI<br/>gemini-3.7-flash · global"]
@@ -132,9 +134,9 @@ submission.
 
 | Requirement | Implemented evidence | Honest boundary |
 |---|---|---|
-| Gemini 3.5 or newer | `gemini-3.7-flash` in `agent/src/server.ts` and `agent/scripts/smoke.ts` | Vertex ADC path needs a deployed real request |
+| Gemini 3.5 or newer | `gemini-3.7-flash`; a successful Cloud Build smoke used ADC to call Vertex AI and exercised four triage cases | The same path through the Cloud Run URL is not yet verified |
 | Google Agent Framework | ADK `Runner`, one `LlmAgent`, one `FunctionTool`, `SecurityPlugin` | No `SequentialAgent` or `LongRunningFunctionTool` |
-| Google Cloud | Cloud Run source configuration, Vertex ADC configuration, GCP OTel exporter | Billing/deployment/log proof still pending |
+| Google Cloud | Ready Cloud Run revisions in two Australia regions; successful Cloud Build-to-Vertex smoke (`e8a0c467-5940-4777-ba0a-7cf788a61444`) | Google-front 404 currently blocks hosted endpoint proof |
 | Discovery & lifecycle | 10 generated local Unit contracts | Cloud discovery is behind `CONTEXTOPS_CLOUD_REGISTRY=false` |
 | State and memory | ADK in-memory session and memory verified | Vertex persistence is wired but disabled and not live-verified |
 | Security and governance | deterministic pre-model gates plus `ContextOpsPolicyEngine` tests | No Model Armor or cloud identity federation |
