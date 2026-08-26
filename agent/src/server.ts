@@ -89,7 +89,17 @@ export function createApp(dependencies: AppDependencies = {}) {
   });
   app.use(express.json({ limit: "64kb" }));
 
-  app.get("/healthz", (_request, response) => {
+  /**
+   * Two paths, one handler.
+   *
+   * `/healthz` returns 404 on Cloud Run — every other route on the same service
+   * answers, and the route serves locally, so something in front of the
+   * container claims that path before we see it. Rather than guess at the
+   * mechanism under deadline, `/status` is the address we publish and test
+   * against; `/healthz` stays registered for anyone who reaches for the
+   * convention.
+   */
+  app.get(["/status", "/healthz"], (_request, response) => {
     response.json({
       status: "ok",
       external_write: false,
