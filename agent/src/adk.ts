@@ -17,7 +17,7 @@ import type {
   ToolCallRequester,
 } from "./triage.js";
 
-export const CONTEXTOPS_APP_NAME = "verge-contextops";
+export const CONTEXTOPS_APP_NAME = "secondkey-contextops";
 
 export type GeminiAccess =
   | { backend: "developer"; apiKey: string }

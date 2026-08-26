@@ -19,7 +19,7 @@ test("triage runtime is an official ADK Runner with local state services", () =>
 
   assert.ok(runtime.runner instanceof Runner);
   assert.equal(runtime.services.mode, "memory");
-  assert.equal(runtime.appName, "verge-contextops");
+  assert.equal(runtime.appName, "secondkey-contextops");
   const model = runtime.rootAgent.canonicalModel;
   assert.ok(model instanceof Gemini);
   assert.equal(model.model, "gemini-3.7-flash");

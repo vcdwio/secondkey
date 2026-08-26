@@ -11,6 +11,7 @@ import {
   resolveGeminiAccess,
 } from "./adk.js";
 import { resolveAgentRoot } from "./config.js";
+import { FLEET_TIERS } from "./fleet.js";
 import { loadFixtureContext, loadRawInbound, resolveRepoRoot } from "./inbound.js";
 import { REGISTRY_ENTRIES, createRegistryService } from "./registry.js";
 import { createAgentServices, type AgentServiceBundle } from "./services.js";
@@ -99,6 +100,23 @@ export function createApp(dependencies: AppDependencies = {}) {
       model_location: modelAccess.location,
       registry_count: REGISTRY_ENTRIES.length,
       telemetry_mode: mode,
+    });
+  });
+
+  /**
+   * The capability partition, served as data.
+   *
+   * The claim that these agents differ is only worth anything if it can be
+   * checked, so the tool set each tier was constructed with is published rather
+   * than described. It is derived from the same arrays the agents are built
+   * from, so it cannot drift out of date.
+   */
+  app.get("/fleet", (_request, response) => {
+    response.json({
+      coordinator: "secondkey_fleet",
+      order: "draft → internal → external, ascending by what cannot be undone",
+      tiers: FLEET_TIERS,
+      external_write: false,
     });
   });
 

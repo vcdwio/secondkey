@@ -43,4 +43,5 @@ yarn-error.log*
 # local scratch
 /_to_delete/
 tsconfig.tsbuildinfo
-/.openai/
+/.openai/*
+!/.openai/hosting.json

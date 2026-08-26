@@ -32,7 +32,7 @@ export class AuditStore {
     this.records.push(structuredClone(event));
     const component = event.component.replaceAll(/[^A-Za-z0-9_]/g, "_");
     const span = trace
-      .getTracer("verge-contextops-audit")
+      .getTracer("secondkey-contextops-audit")
       .startSpan(`contextops.audit.${component}`);
     span.setAttributes({
       actor: event.actor,

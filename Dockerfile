@@ -7,6 +7,7 @@ RUN npm ci --prefix agent
 
 COPY agent ./agent
 COPY lib/contextops/authority.ts ./lib/contextops/authority.ts
+COPY lib/contextops/execution.ts ./lib/contextops/execution.ts
 COPY lib/contextops/generated/portfolio.json ./lib/contextops/generated/portfolio.json
 COPY fixtures/verge-demo-pack/data ./fixtures/verge-demo-pack/data
 

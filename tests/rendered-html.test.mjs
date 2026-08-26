@@ -1,17 +1,41 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-async function render() {
+/** The control room moved behind the cover; "/" is now the door, "/app" the room. */
+async function render(path = "/app") {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
   const { default: worker } = await import(workerUrl.href);
 
   return worker.fetch(
-    new Request("http://localhost/", { headers: { accept: "text/html" } }),
+    new Request(`http://localhost${path}`, { headers: { accept: "text/html" } }),
     { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } },
     { waitUntil() {}, passThroughOnException() {} },
   );
 }
+
+test("the cover states the claim and opens the control room", async () => {
+  const response = await render("/");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+
+  assert.match(html, /Autonomy/);
+  assert.match(html, /until it matters/);
+  assert.match(html, /href="\/app"/, "the cover must link into the control room");
+
+  // The figures are read from the generated plan, so the cover cannot advertise
+  // a split different from the one the control room actually executes.
+  // The cover builds these strings in one interpolation each, so no React
+  // comment markers land mid-phrase (see PITFALLS.md).
+  assert.match(html, /9<span> of 11 actions<\/span>/);
+  assert.match(html, /2<span> irreversible<\/span>/);
+  assert.match(html, /0<span> external writes<\/span>/);
+
+  // All three tiers named, in ascending order of what cannot be undone.
+  const order = ["Draft", "Internal execution", "External commitment"].map((label) => html.indexOf(label));
+  assert.ok(order.every((index) => index > -1), "every tier is named on the cover");
+  assert.deepEqual(order, [...order].sort((a, b) => a - b), "tiers read in escalating order");
+});
 
 test("server-renders the SecondKey governed-agent command surface", async () => {
   const response = await render();
@@ -19,7 +43,7 @@ test("server-renders the SecondKey governed-agent command surface", async () => 
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>SecondKey — Governed Enterprise Agents<\/title>/i);
+  assert.match(html, /<title>SecondKey — Control Room<\/title>/i);
   assert.match(html, /Autonomy until it matters\./);
   assert.match(html, /The agent holds the first key\. Irreversible actions wait for yours\./);
   assert.match(html, /Seven clients\. Three available people\. One decision\./);

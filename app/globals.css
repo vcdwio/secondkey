@@ -206,7 +206,9 @@ textarea {
 }
 
 .sidebar-spacer {
-  flex: 1;
+  /* Slack belongs at the foot of the rail, not between the nav and the
+     environment card — a gap in the middle reads as unfinished layout. */
+  height: 2px;
 }
 
 .environment-card {
@@ -249,7 +251,7 @@ textarea {
 
 .environment-switch button[disabled] {
   cursor: not-allowed;
-  color: #8d9d97;
+  color: #a7b6b0;
 }
 
 .environment-card p {
@@ -524,7 +526,7 @@ textarea {
 
 .incident {
   display: grid;
-  grid-template-columns: 44px 1fr auto;
+  grid-template-columns: 44px 1fr auto auto;
   gap: 11px;
   align-items: center;
   width: 100%;
@@ -594,6 +596,41 @@ textarea {
 .incident .chevron {
   color: var(--line-2);
   font-size: var(--fs-lg);
+}
+
+/* Urgency reads as time, not as one more colour. Two P0 rows are only
+   distinguishable by how much clock each has left. */
+.incident-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  min-width: 62px;
+}
+
+.incident-clock strong {
+  font-family: var(--mono);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.incident-clock small {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.incident-clock.critical strong {
+  color: var(--p0);
+}
+
+.incident-clock.muted strong,
+.incident-clock.far strong {
+  color: var(--muted);
+  font-weight: 500;
 }
 
 .scope-note {
@@ -1007,7 +1044,7 @@ textarea {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 14px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .blueprint-grid .io-card {
@@ -2108,5 +2145,220 @@ pre.packet {
     transition: none !important;
     animation: none !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   Cover — the door into the control room
+   Dark ground continuous with the sidebar's --shell, lit from one corner.
+   ========================================================================== */
+
+.cover {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 36px clamp(24px, 6vw, 88px) 40px;
+  background: #0c1211;
+  color: #f1f6f3;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* One light source, upper right, in the product's own green. A purple gradient
+   would look like every other AI landing page and like nothing in the app. */
+.cover-glow {
+  position: absolute;
+  inset: -40% -15% auto -10%;
+  height: 150vh;
+  z-index: -1;
+  background:
+    radial-gradient(44% 40% at 78% 26%, rgba(95, 211, 159, 0.34), transparent 66%),
+    radial-gradient(38% 34% at 88% 14%, rgba(120, 211, 170, 0.22), transparent 70%),
+    radial-gradient(60% 50% at 8% 86%, rgba(23, 61, 72, 0.5), transparent 72%);
+}
+
+.cover-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.cover-mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #f2ded2;
+  color: #16201f;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+}
+
+.cover-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: center;
+  gap: clamp(32px, 6vw, 80px);
+}
+
+.cover-copy {
+  max-width: 30ch;
+}
+
+.cover-eyebrow {
+  margin: 0 0 16px;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #9dbdb0;
+}
+
+.cover-title {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(40px, 5.6vw, 76px);
+  line-height: 1;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.cover-lede {
+  margin: 20px 0 0;
+  max-width: 42ch;
+  font-size: var(--fs-lg);
+  line-height: 1.55;
+  color: #bdcdc6;
+}
+
+.cover-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 30px;
+  padding: 14px 26px;
+  border-radius: 999px;
+  background: #f4f4ef;
+  color: #16201f;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.cover-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 34px -14px rgba(95, 211, 159, 0.75);
+}
+
+.cover-cta:focus-visible {
+  outline: 2px solid #5fd39f;
+  outline-offset: 3px;
+}
+
+/* The three tiers as one stacked card: reading down it is also reading in
+   ascending order of what cannot be undone. */
+.cover-fleet {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.cover-fleet li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 16px;
+  padding: 18px 20px;
+  background: rgba(12, 18, 17, 0.86);
+  backdrop-filter: blur(2px);
+}
+
+.cover-fleet strong {
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+
+.cover-fleet span {
+  grid-column: 1;
+  font-size: var(--fs-sm);
+  color: #9dbdb0;
+}
+
+.cover-fleet em {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  text-align: right;
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+  color: #78d3aa;
+}
+
+.cover-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px clamp(28px, 5vw, 64px);
+  margin: 0;
+  padding-top: 26px;
+  border-top: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+.cover-figures div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cover-figures dt {
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: #8fa8a0;
+}
+
+.cover-figures dd {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 28px;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.cover-figures dd span {
+  font-family: var(--font-geist-sans), sans-serif;
+  font-size: var(--fs-sm);
+  color: #9dbdb0;
+  margin-left: 7px;
+}
+
+@media (max-width: 860px) {
+  .cover-main {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 36px;
+    padding-top: 8px;
+  }
+  .cover-copy {
+    max-width: none;
   }
 }

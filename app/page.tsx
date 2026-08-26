@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ContextOpsControlRoom } from "@/components/contextops-control-room";
+import { Cover } from "@/components/cover";
 
 export const metadata: Metadata = {
   title: "SecondKey — Governed Enterprise Agents",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <ContextOpsControlRoom />;
+  return <Cover />;
 }

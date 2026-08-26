@@ -24,6 +24,7 @@ import {
   DECISION_SCOPE,
   PORTFOLIO,
   PORTFOLIO_CONFIDENCE,
+  type QueueItem,
   UNIT_REGISTRY,
   pct,
   visibleQueue,
@@ -91,11 +92,28 @@ const SEED_EVENTS: AuditEvent[] = [
   },
 ];
 
-function nowLabel() {
-  return new Intl.DateTimeFormat("en-AU", { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
+const AUDIT_TIME_FORMAT = new Intl.DateTimeFormat("en-AU", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "Australia/Brisbane",
+});
+
+/**
+ * New audit entries continue the scenario clock, not the viewer's wall clock.
+ *
+ * The seeded trail runs 08:05 → 08:06. Stamping live events with the local time
+ * put a 13:42 above them and made the trail read as broken — and the value
+ * changed with the viewer's timezone. Running the scenario clock forward in
+ * real seconds keeps one coherent timeline and is the same for every viewer.
+ */
+function scenarioTimeLabel(mountedAt: number) {
+  const elapsed = mountedAt ? Date.now() - mountedAt : 0;
+  return AUDIT_TIME_FORMAT.format(new Date(new Date(PORTFOLIO.scenarioTime).getTime() + elapsed));
 }
 
 export function ContextOpsControlRoom() {
+  const mountedAtRef = useRef(0);
   const [view, setView] = useState<ViewId>("brief");
   const [role, setRole] = useState("General Manager");
   const [selectedId, setSelectedId] = useState(PORTFOLIO.incidents[0].id);
@@ -150,10 +168,14 @@ export function ContextOpsControlRoom() {
     return () => controller.abort();
   }, []);
 
+  useEffect(() => {
+    mountedAtRef.current = Date.now();
+  }, []);
+
   const addEvent = useCallback(
     (event: Omit<AuditEvent, "id" | "time">) => {
       setEvents((list) => [
-        { ...event, id: `EV-${list.length + 1}-${Math.round(list.length * 7 + 13)}`, time: nowLabel() },
+        { ...event, id: `EV-${list.length + 1}`, time: scenarioTimeLabel(mountedAtRef.current) },
         ...list,
       ]);
     },
@@ -331,8 +353,8 @@ export function ContextOpsControlRoom() {
   const navCounts: Record<ViewId, string> = {
     brief: String(queue.length),
     queue: String(queue.length),
-    approval: approvalState === "pending" ? "01" : "00",
-    value: `${PORTFOLIO.roi.hoursSavedPerDay.toFixed(1)}h`,
+    approval: approvalState === "pending" ? "1" : "0",
+    value: `${Number(PORTFOLIO.roi.hoursSavedPerDay.toFixed(1))}h`,
     risk: String(PORTFOLIO.securityDrills.length),
     trace: String(PORTFOLIO.trace.length),
   };
@@ -404,9 +426,6 @@ export function ContextOpsControlRoom() {
           </small>
         </label>
 
-        <button className="sidebar-reset" onClick={resetDemo}>
-          Reset demo
-        </button>
       </aside>
 
       <section className="workspace">
@@ -701,6 +720,110 @@ const VIEW_TITLES: Record<ViewId, string> = {
   trace: "The whole decision, retraceable",
 };
 
+
+/**
+ * Urgency, shown as time rather than as another colour.
+ *
+ * Priority (P0/P1/P2) is the *derived* label — impact crossed with urgency,
+ * decided by scoreIncident(). It cannot order two items inside the same band:
+ * four P1 rows all read "Explicit client commitment" and look interchangeable.
+ * The clock restores that ordering from data the queue already holds, which is
+ * how enterprise queues are normally read — the label says how bad, the clock
+ * says how soon.
+ */
+/**
+ * Shared demo clock.
+ *
+ * One interval for the whole queue rather than one per row. It starts at zero
+ * so the server render and the first client render agree, then counts real
+ * seconds off the scenario's SLA figures — the countdown a viewer watches is
+ * genuinely running, not a still frame of a number.
+ */
+function useElapsedHours() {
+  const [elapsedHours, setElapsedHours] = useState(0);
+  useEffect(() => {
+    const startedAt = Date.now();
+    const id = window.setInterval(() => {
+      setElapsedHours((Date.now() - startedAt) / 3_600_000);
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  return elapsedHours;
+}
+
+const pad2 = (value: number) => String(Math.floor(value)).padStart(2, "0");
+
+const DUE_THIS_WEEK = new Intl.DateTimeFormat("en-AU", {
+  weekday: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "Australia/Brisbane",
+});
+
+/** Past a week a weekday alone is ambiguous — "Fri" could be either Friday. */
+const DUE_LATER = new Intl.DateTimeFormat("en-AU", {
+  day: "numeric",
+  month: "short",
+  timeZone: "Australia/Brisbane",
+});
+
+/**
+ * Near deadlines get a ticking countdown, distant ones get a calendar anchor.
+ *
+ * 1.6h and 273h in the same column differ by a factor of 170 — as raw hours the
+ * near one loses its urgency and the far one is a number nobody can picture.
+ * Under two days the clock creates pressure; beyond that a weekday and time is
+ * what a person actually plans against. Jira and PagerDuty both split here.
+ */
+function formatClock(hoursRemaining: number, scenarioTime: string) {
+  if (hoursRemaining <= 0) return { value: "breached", label: "SLA", tone: "critical" };
+
+  if (hoursRemaining < 24) {
+    const seconds = Math.floor(hoursRemaining * 3600);
+    return {
+      value: `${Math.floor(seconds / 3600)}:${pad2((seconds % 3600) / 60)}:${pad2(seconds % 60)}`,
+      label: "SLA left",
+      tone: hoursRemaining <= 2 ? "critical" : "",
+    };
+  }
+
+  if (hoursRemaining < 48) {
+    return {
+      value: `${Math.floor(hoursRemaining / 24)}d ${Math.round(hoursRemaining % 24)}h`,
+      label: "SLA left",
+      tone: "",
+    };
+  }
+
+  const due = new Date(new Date(scenarioTime).getTime() + hoursRemaining * 3_600_000);
+  const formatter = hoursRemaining < 24 * 6 ? DUE_THIS_WEEK : DUE_LATER;
+  return { value: formatter.format(due), label: "due", tone: "far" };
+}
+
+function IncidentClock({ item, elapsedHours }: { item: QueueItem; elapsedHours: number }) {
+  const sla = item.signals.slaHoursRemaining;
+  const due = item.project?.deadlineInHours ?? null;
+  const base = typeof sla === "number" ? sla : typeof due === "number" ? due : null;
+
+  if (base === null) {
+    return (
+      <span className="incident-clock muted">
+        <strong>—</strong>
+        <small>no clock</small>
+      </span>
+    );
+  }
+
+  const clock = formatClock(base - elapsedHours, PORTFOLIO.scenarioTime);
+  return (
+    <span className={clock.tone ? `incident-clock ${clock.tone}` : "incident-clock"}>
+      <strong>{clock.value}</strong>
+      <small>{clock.label}</small>
+    </span>
+  );
+}
+
 function QueuePanel({
   queue,
   selectedId,
@@ -712,6 +835,7 @@ function QueuePanel({
   onSelect: (id: string) => void;
   profile: (typeof AUTHORITY_MATRIX)[string];
 }) {
+  const elapsedHours = useElapsedHours();
   return (
     <article className="panel">
       <div className="panel-heading">
@@ -733,6 +857,7 @@ function QueuePanel({
               <strong>{entry.item.clientName}</strong>
               <small>{entry.priorityReasons[0]}</small>
             </span>
+            <IncidentClock item={entry.item} elapsedHours={elapsedHours} />
             <span className="chevron">›</span>
           </button>
         ))}

@@ -17,13 +17,13 @@ test("local mode uses real ADK in-memory session and memory services", async () 
   assert.ok(services.sessionService instanceof InMemorySessionService);
   assert.ok(services.memoryService instanceof InMemoryMemoryService);
   const created = await services.sessionService.createSession({
-    appName: "verge-contextops",
+    appName: "secondkey-contextops",
     userId: "VC-001",
     sessionId: "SESSION-LOCAL",
     state: { task_id: "TASK-1", external_write: false },
   });
   const restored = await services.sessionService.getSession({
-    appName: "verge-contextops",
+    appName: "secondkey-contextops",
     userId: "VC-001",
     sessionId: created.id,
   });
