@@ -151,7 +151,9 @@ export function ContextOpsControlRoom() {
   useEffect(() => {
     if (!AGENT_URL) return;
     const controller = new AbortController();
-    fetch(`${AGENT_URL}/healthz`, { signal: controller.signal })
+    // /status, not /healthz — the latter is intercepted before it reaches the
+    // container on Cloud Run, so probing it would report a live agent as down.
+    fetch(`${AGENT_URL}/status`, { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error("Agent health unavailable");
         const body = await response.json() as { status?: string; external_write?: boolean };
