@@ -15,7 +15,12 @@ import { FLEET_TIERS } from "./fleet.js";
 import { loadFixtureContext, loadRawInbound, resolveRepoRoot } from "./inbound.js";
 import { REGISTRY_ENTRIES, createRegistryService } from "./registry.js";
 import { createAgentServices, type AgentServiceBundle } from "./services.js";
-import { AuditStore, initializeTelemetry, type TelemetryMode } from "./telemetry.js";
+import {
+  AuditStore,
+  flushSpans,
+  initializeTelemetry,
+  type TelemetryMode,
+} from "./telemetry.js";
 import { processEmailTriage, type ToolCallRequester } from "./triage.js";
 
 const agentRoot = resolveAgentRoot(path.dirname(fileURLToPath(import.meta.url)));
@@ -205,6 +210,7 @@ export function createApp(dependencies: AppDependencies = {}) {
           policy_outcome: result.outcome.toUpperCase(),
         });
       }
+      await flushSpans(mode);
       response.json({ external_write: false, processed_count: results.length, results });
     } catch (error) {
       next(error);

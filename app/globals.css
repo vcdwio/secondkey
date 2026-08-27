@@ -2179,6 +2179,38 @@ pre.packet {
     radial-gradient(60% 50% at 8% 86%, rgba(23, 61, 72, 0.5), transparent 72%);
 }
 
+.cover-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cover-toplink {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  color: #eaf3ee;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.cover-toplink:hover {
+  border-color: rgba(120, 211, 170, 0.75);
+  background: rgba(120, 211, 170, 0.1);
+}
+
+.cover-toplink:focus-visible {
+  outline: 2px solid #5fd39f;
+  outline-offset: 3px;
+}
+
 .cover-brand {
   display: flex;
   align-items: center;
@@ -2266,6 +2298,41 @@ pre.packet {
   outline-offset: 3px;
 }
 
+/* A small, slow nudge. Enough to read as a door rather than a caption; not
+   enough to become the loudest thing on a still page. */
+.cover-cta-arrow {
+  animation: cover-nudge 2.6s ease-in-out infinite;
+}
+
+@keyframes cover-nudge {
+  0%, 72%, 100% { transform: translateX(0); }
+  84% { transform: translateX(4px); }
+}
+
+.cover-cta-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 0;
+  font-size: var(--fs-sm);
+  color: #9dbdb0;
+}
+
+.cover-live {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #5fd39f;
+  box-shadow: 0 0 0 0 rgba(95, 211, 159, 0.6);
+  animation: cover-pulse 2.4s ease-out infinite;
+}
+
+@keyframes cover-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(95, 211, 159, 0.55); }
+  70%, 100% { box-shadow: 0 0 0 7px rgba(95, 211, 159, 0); }
+}
+
 /* The three tiers as one stacked card: reading down it is also reading in
    ascending order of what cannot be undone. */
 .cover-fleet {
@@ -2282,12 +2349,29 @@ pre.packet {
 }
 
 .cover-fleet li {
+  background: rgba(12, 18, 17, 0.86);
+  backdrop-filter: blur(2px);
+}
+
+/* Each tier is a door too. Three more targets, and hovering one is how a
+   visitor discovers the card is not a static diagram. */
+.cover-fleet a {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 3px 16px;
   padding: 18px 20px;
-  background: rgba(12, 18, 17, 0.86);
-  backdrop-filter: blur(2px);
+  color: inherit;
+  text-decoration: none;
+  transition: background 140ms ease;
+}
+
+.cover-fleet a:hover {
+  background: rgba(120, 211, 170, 0.09);
+}
+
+.cover-fleet a:focus-visible {
+  outline: 2px solid #5fd39f;
+  outline-offset: -2px;
 }
 
 .cover-fleet strong {
@@ -2349,6 +2433,13 @@ pre.packet {
   font-size: var(--fs-sm);
   color: #9dbdb0;
   margin-left: 7px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cover-cta-arrow,
+  .cover-live {
+    animation: none;
+  }
 }
 
 @media (max-width: 860px) {

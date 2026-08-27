@@ -11,12 +11,12 @@
 | 项 | 真实值 | 一句话怎么说 |
 |---|---|---|
 | 模型 | `gemini-3.7-flash` | "3.7 Flash，只做邮件特征提取" |
-| 模型后端 | Vertex AI ADC 路径已配置、未在线验证 | "Cloud Run 将用服务账号 ADC，不注入 key" |
+| 模型后端 | Vertex AI ADC 线上已验证 | "Cloud Run 用服务账号 ADC，不注入 key" |
 | 模型位置 | `global` | "3.7 Flash 只有 global 端点" |
-| Cloud Run | 目标是 Australia region，尚未部署 | "服务区域和 global 模型位置是两件事" |
+| Cloud Run | `australia-southeast2`，公网可达 | "服务区域和 global 模型位置是两件事" |
 | 会话状态 | `memory`（内存） | "Vertex 持久层已接线，本次未启用、未在线验证" |
 | Agent Registry | 本地 10 个 Unit，云端发现关闭 | "契约在，云端发现这次没开" |
-| 测试 | 69 个（根 35 + agent 34） | "69 个自动化测试，零 lint 错误" |
+| 测试 | 83 个（根 36 + agent 47） | "83 个自动化测试，零 lint 错误" |
 | `external_write` | 恒为 `false` | "每条路径都断言过" |
 
 **这张表存在的意义**：底下所有话术都不能和它冲突。只要有一句超出这张表，
@@ -69,7 +69,9 @@ FunctionTool 去问，问到什么就是什么。
 
 我们先写了审批门、审计链、权限矩阵和注入防护，再把真实 Gemini 提取接进 ADK
 `Runner`、`LlmAgent`、`FunctionTool` 和 `SecurityPlugin`。OpenTelemetry 已接本地审计；
-Vertex 持久层、Cloud Registry 发现和 Google Cloud exporter 都只是接线或配置，未在线验证。
+Vertex 持久层、Cloud Registry 发现仍只是接线或配置，未在线验证。Cloud Run 的
+Gemini/Vertex ADC 路径已由 `/status` 和真实 `/triage` 证据验证；Cloud Trace 落库只在
+最终部署后查到 span 时才算验证。
 
 **这条的价值**：证明我们**理解**这些组件解决什么问题，不是照着教程调 API。
 被问到"为什么用 GEAP"时，答案是"因为我们先自己造过一遍，知道它替我们省了什么"。
@@ -125,8 +127,9 @@ Vertex 持久层、Cloud Registry 发现和 Google Cloud exporter 都只是接�
 
 ### Agent Gateway（智能体网关）
 - **是什么**：所有 agent 调用的统一入口，在这里做路由和策略执行。
-- **我们**：ADK 的 `BasePolicyEngine` + `SecurityPlugin`。`evaluateAuthority()`
-  就是我们的策略引擎，插进去之后**在工具执行之前**拦截，不是执行完再回滚。
+- **我们**：有应用内的 ADK `BasePolicyEngine` + `SecurityPlugin`，但**没有接入 Google
+  Agent Gateway 服务**。`evaluateAuthority()` 在工具执行之前拦截，这是可验证的本地
+  策略层，不要把它重命名成云端 Gateway。
 - **被追问"策略在哪一层"**：
   > "在工具调用层，不在提示词层。提示词里写'不许越权'是建议，策略引擎返回 DENY
   > 是强制。我们两个都做，但只有后者算数。"
@@ -142,14 +145,15 @@ Vertex 持久层、Cloud Registry 发现和 Google Cloud exporter 都只是接�
 ### Agent Observability（可观测性）
 - **是什么**：OpenTelemetry 标准的跨组件遥测，可承载调用和策略轨迹。
 - **我们**：每条审计记录创建一个 OTel span，属性带 actor、role、evidence_ids、
-  task_id、policy_outcome，并可导出 JSON 和 CSV。GCP exporter 已配置但未在线验证。
+  task_id、policy_outcome，并可导出 JSON 和 CSV。GCP exporter 和请求末尾强制 flush
+  已实现、已测；只有 Cloud Trace Explorer 里实际出现 span 才能说线上已验证。
 - **被追问"三个月后客户投诉怎么查"**：
   > "导出那次任务的完整 span 树。每一步用了哪条证据、哪个策略版本、谁批的、
   > 批的时候写了什么理由，全都在。"
 
 ### Data Sovereignty（数据主权）
 - **是什么**：数据必须留在特定法域内（澳洲的数据不能跑到美国机房）。
-- **我们**：Cloud Run 目标是 Australia region，但尚未部署；Gemini 3.7 Flash
+- **我们**：Cloud Run 已在 `australia-southeast2` 运行；Gemini 3.7 Flash
   配置使用 Vertex `global` 端点，所以**模型推理不是澳洲区域锁定**。
 - **一句话（照这个说）**："Cloud Run 目标在澳洲区域，模型走 global；这两件事分开，
   所以我们不声称数据主权。"
@@ -269,6 +273,10 @@ agent 不行。要说"**人只在不可逆边界介入**"。
 > `SecurityPlugin`。当前审批仍是应用层确定性工作流，不冒充 ADK
 > `requireConfirmation`。选择 ADK 的价值是模型调用、工具和策略处在同一个可测试运行时。"
 
+**若被问“舰队线上在哪”必须主动补一句**：
+> "三层 `secondkey_fleet` 的构造、工具隔离和策略测试已经完成，`/fleet` 可查；但当前
+> `/triage` Runner 仍挂的是单一 intake agent，所以我不把它说成已上线的多 Agent 委派。"
+
 ### Q12「这个能卖给谁？多少钱？」
 > "咨询公司、代理公司、专业服务。价值账在产品里就能改：每天省 6.9 小时，
 > 每周约 6,255 澳元，外加避免 2 次 SLA 违约的 5,000 澳元敞口。**假设是可编辑的**
@@ -276,22 +284,23 @@ agent 不行。要说"**人只在不可逆边界介入**"。
 > 一个不能被质疑的 ROI 数字没有说服力。"
 
 ### Q13「你们做了多久？这是新项目吗？」
-> "提交期内新建。git 历史从头都在，第一个 commit 就是 v0.2.0 基线。
-> 数据包是我们自己准备的虚构素材，在提交说明里披露了。"
+> "SecondKey 的黑客松包装、ADK/Gemini/Vertex 接线、舰队定义、云部署和提交证据在
+> 提交期内完成。ContextOps 确定性核心和虚构数据包早于提交期，已在 Devpost 里明确
+> 披露；我不把这两部分说成提交期内新建。"
 
 ### Q14「测试覆盖怎么样？」
-> "69 个自动化测试——根项目 35 个，agent 34 个。覆盖优先级规则、权限限额、执行门、
+> "83 个自动化测试——根项目 36 个，agent 47 个。覆盖优先级规则、权限限额、执行门、
 > 回滚、幂等键唯一性、容量求解器的确定性、乐观并发的版本冲突、ROI 算术、对抗样本。
 > **关键的一条**：八条队列优先级是算出来的，测试断言算出来的结果必须和已验证的
 > 数据包一致——改了规则跑不过测试。"
 
 **被追问"那线上跑的路径测了吗"**（这是最锋利的一问，提前准备）：
-> "没有。69 个测试覆盖确定性核心和工具层；Vertex ADC 是同一份代码的另一条配置
-> 路径。部署后必须打一条真 `/triage`，并在 Cloud Logging 里找到同时间的 Vertex
-> 请求。**看到这两份证据以前，我只说已配置，不说已验证。**"
+> "测了 Cloud Run `/status` 和一条真实 `/triage`；EM-001 走了 Gemini 工具调用，
+> EM-023 在模型前被隔离，证据在 `evidence/live-triage-cloudrun.json`。Cloud Trace
+> 仍要看最终部署后的 span；没看到就只说 exporter 已实现、已测。"
 
 ### Q15「无障碍做了吗？」
-> "之前的 axe-core 审核覆盖七个界面并记录为零违规；这不是 69 个当前测试的一部分。
+> "之前的 axe-core 审核覆盖七个界面并记录为零违规；这不是 83 个当前测试的一部分。
 > 正文最小 12px，弹层 Esc 关闭、Tab 陷阱、
 > 焦点归还。之前有 75 处对比度不达标，全清了。"
 
@@ -324,7 +333,7 @@ agent 不行。要说"**人只在不可逆边界介入**"。
 | 2:10–2:50 | **治理**。切成 Consultant 点批准 → 四条越权理由 + 提交给 GM。切回 GM → 打开审批包 → 展示那封写好的客户邮件 → 批准。 | 审批工作台 |
 | 2:50–3:20 | **执行与回滚**。11 条调用带幂等键，点回滚，9 条还原，2 封邮件从未离开草稿。 | 执行面板 |
 | 3:20–3:45 | **Google Cloud 证据**（**规则强制**）。切到 Cloud Run 控制台展示服务、切到 Vertex AI 日志展示 Gemini 调用、展示 `.run.app` URL。 | GCP 控制台 |
-| 3:45–4:00 | **收尾**。69 个测试、零 lint 错误、上线清单还差三件事——**主动说出没做完的部分**。 | 上线清单 |
+| 3:45–4:00 | **收尾**。83 个测试、零 lint 错误、上线清单还差三件事——**主动说出没做完的部分**。 | 上线清单 |
 
 **开场白就用这句**（背下来）：
 > "Monday, 8:05am. Seven client accounts need something urgently. Three people
@@ -353,7 +362,7 @@ agent 不行。要说"**人只在不可逆边界介入**"。
 **一句话**：Gemini 提取邮件特征，确定性规则判定，系统准备 9 个可逆动作，
 2 个不可逆的停在人手上。
 
-**三个数**：11 个调用 / 9 个可回滚 / 69 个测试。
+**三个数**：11 个调用 / 9 个可回滚 / 83 个测试。
 
 **三个演示动作**：点不同客户看决策变 → 点注入看拦截 → 切 Consultant 看越权拦下。
 

@@ -4,7 +4,18 @@ import test from "node:test";
 import { InMemorySpanExporter, SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
 
-import { AuditStore } from "../src/telemetry.js";
+import { AuditStore, flushSpans } from "../src/telemetry.js";
+
+test("span flushing never throws when provider support is absent or fails", async () => {
+  await assert.doesNotReject(() => flushSpans("gcp", {}));
+  await assert.doesNotReject(() =>
+    flushSpans("gcp", {
+      forceFlush: async () => {
+        throw new Error("exporter unavailable");
+      },
+    }),
+  );
+});
 
 test("audit records become OTel spans with actor, role, evidence, task and policy attributes", async () => {
   const exporter = new InMemorySpanExporter();

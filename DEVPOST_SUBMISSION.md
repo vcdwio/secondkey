@@ -84,27 +84,35 @@ trace.
 The architectural decision that shaped everything: **the model has autonomy, but no
 discretion.**
 
-The submitted agent contains one ADK `LlmAgent` inside an official `Runner`. Gemini
-3.7 Flash extracts a factual summary, intent and explicit urgency phrases from queued
-mail, then must call one `FunctionTool`: `score_priority`. That tool does not trust a
-model-supplied priority; it returns the value already computed by deterministic server
-rules. Identity, tenant access, prompt-injection quarantine and duplicate handling run
-before the model is called.
+The hosted `/triage` path contains one focused ADK `LlmAgent` inside an official
+`Runner`. Gemini 3.7 Flash extracts a factual summary, intent and explicit urgency
+phrases from queued mail, then must call one `FunctionTool`: `score_priority`. That
+tool does not trust a model-supplied priority; it returns the value already computed
+by deterministic server rules. Identity, tenant access, prompt-injection quarantine
+and duplicate handling run before the model is called.
 
-The hosted configuration targets Vertex AI through the Cloud Run runtime service
+We also constructed and unit-tested `secondkey_fleet`, a `SequentialAgent` with three
+authority-partitioned `LlmAgent` tiers: draft-only, reversible internal commit, and
+always-confirmed external commitment. Their tool sets and `allowedFunctionNames` do
+not overlap, and `ContextOpsPolicyEngine` independently returns ALLOW, DENY or CONFIRM
+before execution. This fleet is exposed as inspectable metadata at `/fleet`, but
+`createFleet()` is not yet mounted in the hosted Runner. We therefore do not claim
+that the live service currently delegates between multiple agents.
+
+The hosted configuration reaches Vertex AI through the Cloud Run runtime service
 account's Application Default Credentials, so no Gemini key is injected into the
-service. A successful Google Cloud Build smoke used the same ADK code and ADC path to
-call Vertex AI and exercise four governed triage cases. The Cloud Run-to-Vertex path is
-still described separately because Google's public route currently returns 404 before
-the request reaches the container.
+service. The public `/status` response reports `gemini-3.7-flash`, `vertex`, and
+`global`; a verified hosted `/triage` response is committed at
+`evidence/live-triage-cloudrun.json`. `/healthz` alone still returns a front-door 404,
+so `/status` is the documented health endpoint.
 
 Approval is a separate deterministic application workflow. `evaluateAuthority()`
 returns the exact hours, spend, communication and account limits that were exceeded;
 the UI then requires the General Manager's decision note before simulated execution.
 An ADK `SecurityPlugin` backed by `ContextOpsPolicyEngine` is implemented and tested
-to deny unauthorized `commit_changes` and cross-account context tool calls before
-execution. The current triage agent exposes only `score_priority`, so we do not claim
-an ADK long-running confirmation flow that is not present in this submission.
+to deny unauthorized writes and cross-account context tool calls before execution.
+The current triage agent exposes only `score_priority`, and the fleet is not mounted,
+so we do not claim a hosted ADK confirmation or long-running recovery flow.
 
 Nothing on screen is hand-written. `npm run data` reads only the fixture pack and
 generates the portfolio model; if a number cannot be derived from the data or returned
@@ -122,20 +130,18 @@ we have not verified end to end.
 
 ## Technologies used
 
-- **Gemini 3.7 Flash / Vertex AI** — extraction only. A Google Cloud Build smoke
-  successfully called Vertex AI through service-account ADC using the submitted ADK
-  code. The intended
-  Cloud Run path uses runtime service-account ADC
-  (`GOOGLE_GENAI_USE_VERTEXAI=true`, model location `global`); local development uses
-  a Gemini API key in an untracked `agent/.env`. Cloud Run endpoint invocation still
-  needs proof after Google's front-end 404 is resolved.
-- **Google ADK for TypeScript** (`@google/adk` v2) — `Runner`, one `LlmAgent`, one
-  `FunctionTool`, in-memory session/memory services, and `SecurityPlugin`
-- **Google Cloud Run** — source deployments produced Ready revisions in two Australia
-  regions.
-  Model inference uses Vertex's `global` endpoint, so we make no claim about where
-  inference or data resides. The generated public endpoints currently return a
-  Google-front 404 before reaching the containers, so they are not yet submission-ready.
+- **Gemini 3.7 Flash / Vertex AI** — extraction only. The live Cloud Run runtime uses
+  service-account ADC (`GOOGLE_GENAI_USE_VERTEXAI=true`, model location `global`);
+  local development uses a Gemini API key in an untracked `agent/.env`. Hosted
+  `/status` and real `/triage` evidence verify this path.
+- **Google ADK for TypeScript** (`@google/adk` v2) — the live path uses `Runner`, one
+  focused `LlmAgent`, one forced `FunctionTool`, in-memory session/memory services and
+  `SecurityPlugin`; a three-`LlmAgent` `SequentialAgent` fleet is separately
+  constructed and tested but not mounted in production
+- **Google Cloud Run** — public service in `australia-southeast2`; `/status`, `/fleet`,
+  `/registry` and `/triage` are reachable. Model inference uses Vertex's `global`
+  endpoint, so we make no claim about where inference or data resides. `/healthz`
+  remains an isolated unresolved 404 and is not the published health endpoint.
 - **Vertex AI Session Service and Memory Bank** — wired behind
   `CONTEXTOPS_STATE_BACKEND`, so cross-session context switches on with one variable
   and a provisioned Agent Engine id. The submitted build ships with in-memory state;
@@ -143,21 +149,30 @@ we have not verified end to end.
 - **Agent Registry** — ten Units with version, department scope and typed input/output
   contracts, served locally; cloud registry discovery sits behind
   `CONTEXTOPS_CLOUD_REGISTRY` and is off in this build
-- **OpenTelemetry** — local audit spans carrying actor, role, evidence ids and policy
-  outcome; the Google Cloud exporter is configured but not yet evidenced online
+- **OpenTelemetry** — audit spans carry actor, role, evidence ids and policy outcome;
+  the Google Cloud exporter and request-end flush are implemented and unit-tested.
+  Cloud Trace landing is claimed only if the final deployed trace is visible.
 - **TypeScript / React / Vite** — the operator control room, six views
-- **Node test runner and ESLint** — 69 automated tests and zero lint errors. A prior
+- **Node test runner and ESLint** — 83 automated tests (36 root + 47 agent) and zero lint errors. A prior
   axe-core audit recorded zero WCAG 2.1 AA violations across seven surfaces.
 
 ---
 
 ## Data sources
 
-A fictional data pack we authored for this project and disclose as pre-existing input:
+A fictional data pack we authored and disclose as work that existed before the
+hackathon submission period:
 10 staff, 7 client accounts, 8 projects, 30 emails, 12 calendar events, 9 tickets,
 invoices, and 25 regression scenarios. Every address is a `.example` domain. There are
 no real people, no real customers and no production data anywhere in the system —
 deliberately, because the demo stage is not where you should be touching either.
+
+The deterministic ContextOps core also existed before the submission period and was
+incorporated as disclosed pre-existing work. During the submission period we built
+SecondKey's hackathon packaging, hosted cover/control-room presentation, Google ADK and
+Gemini/Vertex runtime, authority-partitioned fleet definition, Cloud Run deployment,
+telemetry integration, evidence and submission documentation. We do not represent the
+pre-existing core or data pack as newly created hackathon work.
 
 ---
 
@@ -195,7 +210,7 @@ look like code errors. Costly to diagnose the first time; now documented in
   cross-account reach, plus a pre-execution ADK policy check for protected tool calls.
 - Rollback that admits its own limits: nine changes restore cleanly, and the two that
   cannot be undone are labelled as such rather than pretended away.
-- 69 automated tests, zero lint errors, a prior seven-surface axe audit with zero
+- 83 automated tests (36 root + 47 agent), zero lint errors, a prior seven-surface axe audit with zero
   violations, and a body-text floor of 12px — the governance story is legible on a
   projector, which is where it actually has to work.
 

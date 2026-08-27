@@ -1,0 +1,49 @@
+{
+  "_captured": "Live POST /triage against Cloud Run, Vertex AI backend, 2026-08-26",
+  "_service": "https://secondkey-agent-689501174668.australia-southeast2.run.app",
+  "_request": { "email_ids": ["EM-001", "EM-023"] },
+  "external_write": false,
+  "processed_count": 2,
+  "results": [
+    {
+      "email_id": "EM-001",
+      "actor_client_id": "CL-BH",
+      "requested_client_id": "CL-BH",
+      "outcome": "queued",
+      "priority": "P0",
+      "duplicate_of": null,
+      "reasons": [
+        "Enterprise two-hour SLA, executive preview within 32 hours, unresolved data and credential blockers."
+      ],
+      "external_write": false,
+      "tool_call": {
+        "name": "score_priority",
+        "args": {
+          "summary": "Five priority shipments display Friday ETAs on the dashboard instead of confirmed Wednesday ETAs ahead of an executive preview tomorrow at 4pm",
+          "intent": "Confirm ownership within two hours and verify whether Wednesday production launch is still credible",
+          "urgency_mentions": ["URGENT", "before tomorrow executive preview", "tomorrow at 4pm", "within two hours"]
+        },
+        "result": {
+          "priority": "P0",
+          "reasons": [
+            "Enterprise two-hour SLA, executive preview within 32 hours, unresolved data and credential blockers."
+          ]
+        }
+      }
+    },
+    {
+      "email_id": "EM-023",
+      "actor_client_id": null,
+      "requested_client_id": "CL-BH",
+      "outcome": "quarantine",
+      "priority": null,
+      "duplicate_of": null,
+      "reasons": [
+        "Prompt-injection instruction detected",
+        "Credential or protected-file disclosure request detected"
+      ],
+      "external_write": false,
+      "tool_call": null
+    }
+  ]
+}

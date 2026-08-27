@@ -70,6 +70,27 @@ export class AuditStore {
 
 export type TelemetryMode = "off" | "console" | "gcp";
 
+interface FlushableTracerProvider {
+  getDelegate?: () => unknown;
+  forceFlush?: () => Promise<void>;
+}
+
+export async function flushSpans(
+  mode: TelemetryMode,
+  provider: FlushableTracerProvider = trace.getTracerProvider() as FlushableTracerProvider,
+): Promise<void> {
+  if (mode !== "gcp") return;
+  try {
+    const target = (typeof provider.getDelegate === "function"
+      ? provider.getDelegate()
+      : provider) as { forceFlush?: () => Promise<void> } | undefined;
+    if (typeof target?.forceFlush === "function") await target.forceFlush();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown exporter error";
+    console.warn(`OpenTelemetry forceFlush failed: ${message}`);
+  }
+}
+
 export async function initializeTelemetry(
   env: Record<string, string | undefined>,
 ): Promise<TelemetryMode> {

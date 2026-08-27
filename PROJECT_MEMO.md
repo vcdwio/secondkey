@@ -8,7 +8,7 @@
 - Safety: no external writes, no credentials, no real identities.
 - Fixture validation: 58 archive entries; pack validator passed 10 staff, 7 clients, 30 emails and 25 Eval scenarios.
 - Flagship decision: 12 proposed staff-hours, two P0 accounts, GM approval required.
-- Local agent delivery verified. Cloud Run revisions are deployed and Ready. Vertex AI ADC was verified by a successful Google Cloud Build smoke using the submitted ADK path; Cloud Run-to-Vertex remains unverified because Google's public route returns 404 before the container. Vertex persistence remains prepared only. Live connectors remain locked and unconfigured.
+- Local agent delivery and the hosted Cloud Run-to-Vertex ADC path are verified. Public `/status`, `/fleet` and `/triage` respond; `evidence/live-triage-cloudrun.json` records EM-001's real Gemini tool call and EM-023's pre-model quarantine. `/healthz` alone remains an unresolved Cloud Run-front 404, so `/status` is canonical. Vertex persistence remains prepared only. Live connectors remain locked and unconfigured.
 
 ## Since 0.2.0
 
@@ -24,7 +24,10 @@
 - Approval reserves 12 derived staff-hours with optimistic versions; rollback releases them without overselling.
 - OTel spans, JSON audit, safe CSV audit, and the six HTTP endpoints are implemented locally.
 - Before the SecondKey/Vertex change, 32 root tests and 29 agent tests passed with both TypeScript checks, ESLint, fixture validation, rendered HTTP, production Agent HTTP, browser interactions, and a Developer API smoke request. A later Google Cloud Build smoke verified Gemini 3.7 through Vertex AI ADC; the Cloud Run-hosted path still needs request evidence.
-- Current local verification: 35 root tests and 34 agent tests pass (69 total), with both TypeScript checks, ESLint, fixture validation, production builds, rendered HTTP, production health, and desktop/mobile browser QA.
+- Current local verification: 36 root tests and 47 agent tests pass (83 total), including the OpenTelemetry forced-flush regression, both TypeScript checks, ESLint, fixture validation, production builds, rendered HTTP, production health, and desktop/mobile browser QA.
 - Production dependency audits report zero known vulnerabilities for both root and agent after narrow ADK transitive overrides.
 - Browser QA passed at desktop and 390px mobile width with no horizontal overflow and no console warnings/errors.
-- The production container builds and starts, and Cloud Run revisions are Ready in two Australia regions. The generated `run.app` endpoints still return a Google-front 404 before reaching the container, so hosted `/healthz`, `/triage`, and Cloud Run-to-Vertex evidence remain unverified. Vertex AI itself was verified separately by Cloud Build smoke `e8a0c467-5940-4777-ba0a-7cf788a61444`.
+- The production container builds and starts, and Cloud Run is public in `australia-southeast2`. Hosted `/status`, `/fleet`, `/registry`, `/audit.*` and `/triage` are verified. The special `/healthz` path still returns a front-door 404. Cloud Trace export has a request-end forced flush and remains subject to final post-deploy evidence.
+- The three-tier `secondkey_fleet` is constructed and covered by 12 tests, but production `/triage` still mounts only `contextops_intake`; `/fleet` is construction metadata, not live delegation proof.
+- The hosted control room is fully interactive but currently displays `Google ADK runtime · local endpoint`; its Monday scenario is the deterministic browser demo and does not call Cloud Run unless built with `NEXT_PUBLIC_AGENT_URL` and the backend allows `CONTEXTOPS_UI_ORIGIN`.
+- Security audit: no tracked `agent/.env`, no credential-like history match beyond one repeated explicit test placeholder, no production dependency vulnerabilities under `npm audit --omit=dev`; public `/triage` has no auth/rate limit and max instances 1 with concurrency 80 is not a spend cap.

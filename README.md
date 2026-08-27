@@ -4,6 +4,61 @@
 
 SecondKey is a governed enterprise-agent demo for Verge Consulting: ten customer-facing business Units, one shared deterministic ContextOps core, and a real Google ADK + Gemini extraction runtime. Reversible work can advance automatically; consequential actions stop at a human approval boundary. Demo stays write-disabled and Live remains locked.
 
+## Verify it yourself
+
+The hosted frontend is split deliberately: [`/`](https://secondkey.vcdw-io.workers.dev/)
+is the two-minute product cover and [`/app`](https://secondkey.vcdw-io.workers.dev/app)
+is the interactive control room. The public Cloud Run service can be checked in
+three commands:
+
+```bash
+curl -s https://secondkey-agent-689501174668.australia-southeast2.run.app/status
+curl -s https://secondkey-agent-689501174668.australia-southeast2.run.app/fleet
+curl -sX POST https://secondkey-agent-689501174668.australia-southeast2.run.app/triage \
+  -H "Content-Type: application/json" \
+  -d '{"email_ids":["EM-001","EM-023"]}'
+```
+
+The verified triage response is stored at
+[`evidence/live-triage-cloudrun.json`](evidence/live-triage-cloudrun.json). Its
+decision-bearing fields are:
+
+```json
+{
+  "external_write": false,
+  "processed_count": 2,
+  "results": [
+    {
+      "email_id": "EM-001",
+      "outcome": "queued",
+      "priority": "P0",
+      "tool_call": {
+        "name": "score_priority",
+        "args": {
+          "summary": "Five priority shipments display Friday ETAs on the dashboard instead of confirmed Wednesday ETAs ahead of an executive preview tomorrow at 4pm",
+          "intent": "Confirm ownership within two hours and verify whether Wednesday production launch is still credible",
+          "urgency_mentions": ["URGENT", "before tomorrow executive preview", "tomorrow at 4pm", "within two hours"]
+        },
+        "result": {
+          "priority": "P0",
+          "reasons": ["Enterprise two-hour SLA, executive preview within 32 hours, unresolved data and credential blockers."]
+        }
+      }
+    },
+    {
+      "email_id": "EM-023",
+      "outcome": "quarantine",
+      "priority": null,
+      "tool_call": null
+    }
+  ]
+}
+```
+
+`tool_call.args` is Gemini's extraction. `tool_call.result` is the deterministic
+server-owned decision returned by the tool. EM-023 is quarantined before the
+model, so its `tool_call` is `null`.
+
 ## Included
 
 - 10 independently runnable business Unit demos.
@@ -16,6 +71,7 @@ SecondKey is a governed enterprise-agent demo for Verge Consulting: ten customer
 - Value case with editable assumptions, and a go-live checklist for Live.
 - Full audit trail with actor and evidence on every event, exportable as JSON.
 - Google ADK `Runner`, `FunctionTool`, `SecurityPlugin`, Session Service, Memory Service, Agent Registry query adapter, and OpenTelemetry audit spans.
+- A constructed and unit-tested authority-partitioned fleet: draft, reversible internal commit, and always-confirmed external commitment tiers with disjoint tools. This fleet is not yet mounted in the hosted `/triage` Runner; `/fleet` exposes its construction metadata for inspection.
 - Optimistic capacity reservations: approval moves the visible state from lock v1 to reserved v2; rollback releases it at v3.
 - Input/output map and API/MCP readiness matrix.
 - Validated fictional Verge data pack: 10 staff, 7 clients, 30 emails, 25 Eval scenarios.
@@ -42,6 +98,9 @@ npm test
 npm run lint
 npx tsc --noEmit
 ```
+
+The current verified total is **83 tests**: 36 in the root suite (31 core + 5
+rendered HTTP checks) and 47 in `agent/`.
 
 Validate the fixture pack independently:
 
@@ -74,15 +133,23 @@ the four required acceptance cases without printing the key.
 
 Agent endpoints:
 
-- `GET /healthz` — runtime, state backend, model, registry count, telemetry mode.
+- `GET /status` — runtime, state backend, model, registry count, telemetry mode.
+- `GET /fleet` — the three constructed fleet tiers, exact tool sets, write reach and human-gate policy. This proves the definition, not that the fleet is mounted in `/triage`.
+- `GET /healthz` — local alias of `/status`; the same path is intercepted with 404 on the current Cloud Run route, for an unresolved platform-front-door reason.
 - `POST /triage` — fixture email triage with deterministic safety gates.
 - `GET /sessions/:id?user_id=<id>` — ADK session recovery.
 - `GET /registry` — synchronized ten-Unit registry plus an explicitly enabled Cloud discovery count.
 - `GET /audit.json` and `GET /audit.csv` — write-disabled compliance exports.
 
-`GET /healthz` reports `model`, `model_backend`, and `model_location`; the hosted
+`GET /status` reports `model`, `model_backend`, and `model_location`; the hosted
 proof is accepted only when these read `gemini-3.7-flash`, `vertex`, and
 `global`, followed by a successful real triage and matching cloud evidence.
+
+The active production triage path is one ADK `LlmAgent` in a `Runner`, forced to
+call `score_priority`. `agent/src/fleet.ts` separately constructs the three-tier
+`SequentialAgent` fleet and is covered by tests, but `createFleet()` is not yet
+called by `agent/src/server.ts`. Until that wiring exists, SecondKey does not
+claim that hosted triage delegates across three agents.
 
 ### State and telemetry modes
 
@@ -104,9 +171,15 @@ Cloud Agent Registry discovery is independently prepared and defaults off. Set
 verified; model project/location variables alone never enable it.
 
 Set `CONTEXTOPS_TELEMETRY=gcp` only in a Google-authenticated runtime. Set
-`CONTEXTOPS_UI_ORIGIN` to the exact hosted frontend origin for cross-origin
-health checks. Build the frontend with `NEXT_PUBLIC_AGENT_URL` set to the Cloud
-Run service URL; otherwise it honestly shows `local endpoint`.
+`CONTEXTOPS_UI_ORIGIN=https://secondkey.vcdw-io.workers.dev` for cross-origin
+status checks. Build the frontend with `NEXT_PUBLIC_AGENT_URL` set to the Cloud
+Run service URL; otherwise it honestly shows `local endpoint`. The current
+hosted frontend shows `local endpoint`, so its interactive scenario is the
+deterministic in-browser demo and does not call Cloud Run.
+
+`lib/contextops/execution.ts` intentionally has no imports. Both the frontend
+and agent service consume the same simulated-call and idempotency-key logic
+without pulling either build across its runtime boundary.
 
 ## Cloud Run deployment gate
 
@@ -116,7 +189,7 @@ portfolio, and required fixture data. Local preflight:
 ```bash
 docker build -t secondkey-agent .
 docker run --rm -p 8080:8080 --env-file agent/.env secondkey-agent
-curl http://127.0.0.1:8080/healthz
+curl http://127.0.0.1:8080/status
 ```
 
 Cloud deployment creates billable external resources. Use a dedicated runtime
@@ -137,30 +210,36 @@ gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
 
 gcloud run deploy secondkey-agent \
   --source . \
-  --region australia-southeast1 \
+  --region australia-southeast2 \
   --project YOUR_PROJECT_ID \
   --service-account secondkey-runner@YOUR_PROJECT_ID.iam.gserviceaccount.com \
-  --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,GEMINI_MODEL=gemini-3.7-flash,CONTEXTOPS_STATE_BACKEND=memory,CONTEXTOPS_TELEMETRY=gcp
+  --allow-unauthenticated \
+  --max-instances=1 \
+  --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,GEMINI_MODEL=gemini-3.7-flash,CONTEXTOPS_STATE_BACKEND=memory,CONTEXTOPS_TELEMETRY=gcp,CONTEXTOPS_UI_ORIGIN=https://secondkey.vcdw-io.workers.dev
 ```
 
 Cloud Run targets an Australia region; Gemini inference uses the Vertex AI
 `global` endpoint. The CLI command above retains the provider's exact region
 identifier. This configuration does not claim Australian model processing or
 data residency. Keep the service private until its invocation
-policy is chosen, then verify `/healthz`, one real `/triage` request, and the
+policy is chosen, then verify `/status`, one real `/triage` request, and the
 corresponding Vertex/Cloud trace before wiring `NEXT_PUBLIC_AGENT_URL`.
+
+`--max-instances=1` limits scale, not request rate or spend. A public
+`POST /triage` still needs an application/gateway rate limit and a bounded
+`email_ids` batch before this can be treated as a cost-safe production endpoint.
 
 For a private service, verify with an identity token rather than making the
 cost-bearing triage endpoint public:
 
 ```bash
 SERVICE_URL="$(gcloud run services describe secondkey-agent \
-  --region australia-southeast1 \
+  --region australia-southeast2 \
   --project YOUR_PROJECT_ID \
   --format='value(status.url)')"
 IDENTITY_TOKEN="$(gcloud auth print-identity-token)"
 
-curl -H "Authorization: Bearer ${IDENTITY_TOKEN}" "${SERVICE_URL}/healthz"
+curl -H "Authorization: Bearer ${IDENTITY_TOKEN}" "${SERVICE_URL}/status"
 curl -X POST \
   -H "Authorization: Bearer ${IDENTITY_TOKEN}" \
   -H "Content-Type: application/json" \

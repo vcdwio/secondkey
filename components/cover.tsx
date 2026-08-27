@@ -18,9 +18,16 @@ export function Cover() {
     <main className="cover">
       <div className="cover-glow" aria-hidden="true" />
 
-      <header className="cover-brand">
-        <span className="cover-mark" aria-hidden="true">S</span>
-        <span>SecondKey</span>
+      <header className="cover-top">
+        <div className="cover-brand">
+          <span className="cover-mark" aria-hidden="true">S</span>
+          <span>SecondKey</span>
+        </div>
+        {/* People look top-right for the way in. Give them a door there too,
+            so the cover never reads as the whole of the thing. */}
+        <a className="cover-toplink" href="/app">
+          Open the demo <span aria-hidden="true">→</span>
+        </a>
       </header>
 
       <div className="cover-main">
@@ -40,8 +47,12 @@ export function Cover() {
               navigation, and the router prefetch buys nothing here. */}
           <a className="cover-cta" href="/app">
             Enter the control room
-            <span aria-hidden="true">→</span>
+            <span className="cover-cta-arrow" aria-hidden="true">→</span>
           </a>
+          <p className="cover-cta-note">
+            <span className="cover-live" aria-hidden="true" />
+            Live demo · no sign-in
+          </p>
         </div>
 
         {/*
@@ -51,6 +62,7 @@ export function Cover() {
         <ul className="cover-fleet" aria-label="Agent tiers">
           {FLEET_TIERS.map((tier) => (
             <li key={tier.name}>
+              <a href="/app">
               <strong>{tier.label}</strong>
               <span>
                 {tier.canReachClients
@@ -66,6 +78,7 @@ export function Cover() {
                     ? "Holds no write tool"
                     : "Waits beyond role limits"}
               </em>
+              </a>
             </li>
           ))}
         </ul>

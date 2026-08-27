@@ -4,148 +4,164 @@
 
 ## Submission architecture
 
-Solid lines below are implemented and locally verified. The Google Cloud deployment is
-partially live-verified: Cloud Run revisions are Ready, and a Cloud Build smoke run used
-service-account ADC to call Vertex AI successfully. The Cloud Run public route is not
-yet verified because Google's front end currently returns 404 before reaching the
-container.
+Solid arrows are executed in the hosted submission. Dashed arrows are implemented
+and tested but disabled or not mounted. This distinction matters: SecondKey contains
+a three-agent authority-partitioned fleet, but the hosted `/triage` route still runs
+the single-purpose intake agent. `/fleet` proves the fleet definition and tool
+partition; it does not prove live delegation.
 
 ```mermaid
 flowchart TB
-    subgraph local["Implemented submission"]
-        UI["SecondKey Control Room<br/>React operator views"]
-        DATA["Fictional Verge Consulting pack<br/>10 staff · 7 clients · 30 emails"]
-        CORE["Deterministic ContextOps core<br/>priority · context · capacity · authority"]
-        APPROVAL{"Human approval boundary"}
-        SIM["Simulated execution<br/>external_write: false"]
-        AUDIT["JSON / CSV audit<br/>OpenTelemetry spans"]
-        REG["Local Unit registry<br/>10 synchronized contracts"]
+    WEB["Cloudflare Worker<br/>/ cover · /app control room"]
+    DATA["Fictional Verge pack<br/>10 staff · 7 clients · 30 emails"]
+    CORE["Deterministic ContextOps core<br/>priority · capacity · authority"]
+    GATES["Pre-model gates<br/>identity · tenant · injection · duplicate"]
+    TRIAGE["ACTIVE /triage<br/>ADK Runner + contextops_intake LlmAgent<br/>score_priority only"]
+    VAI["Vertex AI<br/>gemini-3.7-flash · global · ADC"]
+    AUDIT["Audit JSON / CSV + OTel spans<br/>external_write: false"]
 
-        DATA --> CORE
-        CORE --> UI
-        CORE --> APPROVAL
-        APPROVAL --> SIM
-        SIM --> AUDIT
-        REG --> UI
+    WEB --> CORE
+    DATA --> CORE --> GATES
+    GATES -->|queued only| TRIAGE --> VAI
+    TRIAGE --> AUDIT
+
+    subgraph FLEET["CONSTRUCTED + TESTED · not mounted in hosted Runner"]
+      COORD["secondkey_fleet<br/>SequentialAgent"]
+      DRAFT["draft_agent<br/>list_queue · build_context_packet<br/>humanGate: never"]
+      INTERNAL["internal_commit_agent<br/>list_queue · commit_internal_change · rollback_changes<br/>humanGate: beyond role limits"]
+      EXTERNAL["external_commitment_agent<br/>list_queue · release_external_commitment<br/>humanGate: always"]
+      CONSTRUCT["Construction boundary<br/>disjoint tools + allowedFunctionNames"]
+      POLICY["ContextOpsPolicyEngine<br/>ALLOW · DENY · CONFIRM before execution"]
+
+      COORD --> DRAFT --> INTERNAL --> EXTERNAL
+      CONSTRUCT --> DRAFT
+      CONSTRUCT --> INTERNAL
+      CONSTRUCT --> EXTERNAL
+      DRAFT --> POLICY
+      INTERNAL --> POLICY
+      EXTERNAL --> POLICY
     end
 
-    subgraph agent["Google ADK triage runtime"]
-        GATES["Pre-model deterministic gates<br/>identity · tenant · injection · duplicate"]
-        RUN["ADK Runner<br/>one LlmAgent + SecurityPlugin"]
-        TOOL["score_priority FunctionTool<br/>returns server-owned priority"]
-        MEM["In-memory session + memory"]
+    FLEET -.->|createFleet is test-only today| TRIAGE
 
-        GATES -->|"queued only"| RUN
-        RUN --> TOOL
-        RUN --> MEM
+    subgraph CLOUD["Hosted Google Cloud path"]
+      CR["Cloud Run<br/>australia-southeast2 · public"]
+      SA["secondkey-runner service account"]
+      STATE["In-memory Session + Memory<br/>Vertex persistence wired, disabled"]
+      REG["10-entry local registry<br/>Cloud discovery disabled"]
+      TRACE["Cloud Trace exporter<br/>configured; final flush verification required"]
+      CR --> SA --> VAI
+      CR --> STATE
+      CR --> REG
+      CR --> TRACE
     end
 
-    DATA --> GATES
-    TOOL --> AUDIT
+    TRIAGE --> CR
 
-    subgraph cloud["Google Cloud path — partially live-verified"]
-        CR["Cloud Run target<br/>Australia region"]
-        SA["Dedicated service account<br/>Application Default Credentials"]
-        VAI["Vertex AI<br/>gemini-3.7-flash · global"]
-        TRACE["Cloud Trace / Logging exporter"]
-        PERSIST["Vertex Session Service + Memory Bank<br/>wired · disabled in submission"]
-        DISC["Cloud Agent Registry discovery<br/>flagged off in submission"]
-
-        CR --> SA --> VAI
-        CR --> TRACE
-        CR -.-> PERSIST
-        CR -.-> DISC
-    end
-
-    RUN -.-> CR
-
-    classDef verified fill:#e6f4ea,stroke:#188038,color:#0d652d
+    classDef live fill:#e6f4ea,stroke:#188038,color:#0d652d
     classDef deterministic fill:#fef7e0,stroke:#f9ab00,color:#8a5a12
     classDef prepared fill:#e8f0fe,stroke:#1a73e8,color:#174ea6,stroke-dasharray:5 5
-    class UI,DATA,APPROVAL,SIM,AUDIT,REG,GATES,RUN,TOOL,MEM verified
-    class CORE deterministic
-    class CR,SA,VAI,TRACE,PERSIST,DISC prepared
+    class WEB,DATA,GATES,TRIAGE,VAI,AUDIT,CR,SA,STATE,REG live
+    class CORE,POLICY,CONSTRUCT deterministic
+    class COORD,DRAFT,INTERNAL,EXTERNAL,TRACE prepared
 ```
 
-Public copy says **Australia region**; the deployment command in `README.md` retains
-Google Cloud's exact provider region identifier because the CLI requires it. Gemini
-model inference uses Vertex AI's `global` location, so SecondKey makes no Australian
-data-residency or region-pinned inference claim.
+Cloud Run executes in `australia-southeast2`; Gemini uses Vertex AI's `global`
+location. SecondKey therefore makes no Australia-pinned inference or data-residency
+claim. The current hosted UI shows `local endpoint` because it was built without
+`NEXT_PUBLIC_AGENT_URL`; its demo remains functional but is not calling Cloud Run.
 
-## Two governed paths
+## Authority-partitioned fleet enforcement
 
-### Real ADK triage path
+The fleet has two independent enforcement layers. Construction controls what each
+agent can reach. The policy engine controls what a reached tool call may do. `DENY`
+means that path can never be authorized; `CONFIRM` means execution pauses for a named
+human with sufficient authority.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant M as Inbound email
-    participant D as Deterministic gates
-    participant A as ADK LlmAgent
-    participant V as Gemini 3.7 Flash
-    participant T as score_priority tool
-    participant O as Audit
-
-    M->>D: raw message
-    D->>D: identity, tenant, injection, duplicate checks
-    alt blocked or duplicate
-        D->>O: reject, quarantine, or link duplicate
-    else queued
-        D->>A: sanitized envelope + server priority state
-        A->>V: extract summary, intent, urgency phrases
-        V->>T: required function call
-        T-->>A: deterministic priority + reasons
-        A->>O: traceable triage result
-    end
-```
-
-Gemini cannot set identity, permission, priority, staffing, spend, or external action.
-The only live model tool is `score_priority`; it reads the priority already computed by
-server rules and returns it with `external_write: false`.
-
-### Portfolio approval path
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant C as ContextOps core
-    participant P as Policy check
-    participant H as Human GM
+    participant C as secondkey_fleet
+    participant D as draft_agent<br/>humanGate never
+    participant I as internal_commit_agent<br/>humanGate beyond limits
+    participant E as external_commitment_agent<br/>humanGate always
+    participant P as ContextOpsPolicyEngine
+    participant H as Named human
     participant X as Simulated execution
-    participant A as Audit
 
-    C->>P: 12h, A$1,800, 2 emails, 2 accounts, acting role
-    P->>P: evaluateAuthority()
-    alt within role limits
-        P->>X: prepare reversible calls
-    else exceeds role limits
-        P-->>H: blocking reasons + approval packet
-        H->>P: approve or reject with note
-        P->>X: prepare only after approval
+    Note over D,E: Construction boundary: disjoint tools + allowedFunctionNames
+    C->>D: list_queue / build_context_packet
+    D->>P: permission-scoped context request
+    alt access group missing
+        P-->>D: DENY — nobody can authorize cross-account retrieval
+    else permitted
+        P-->>D: ALLOW — draft only, no write tool exists
     end
-    X->>A: 11 simulated calls · 9 reversible · no external write
+
+    C->>I: list_queue / commit_internal_change / rollback_changes
+    I->>P: reversible internal change<br/>externalCommunications pinned to 0
+    alt malformed or external communication attempted
+        P-->>I: DENY — use of this path is forbidden
+    else within acting role limits
+        P-->>I: ALLOW
+        I->>X: simulate reversible calls
+    else beyond acting role limits
+        P-->>H: CONFIRM — escalate with exact reasons
+        H-->>I: named approval or rejection
+        I->>X: simulate only after approval
+    end
+
+    C->>E: list_queue / release_external_commitment
+    E->>P: irreversible client commitment
+    P-->>H: CONFIRM — always, including General Manager
+    H-->>E: named approval or rejection
+    E->>X: produce held-for-human-send draft<br/>external_write remains false
 ```
 
-This approval workflow is implemented in the deterministic application core and UI.
-It is not an ADK `requireConfirmation` or long-running resumability flow in the current
-submission.
+This fleet is real code with 12 targeted tests, but `createFleet()` is currently
+referenced only by `agent/tests/fleet.test.ts`. Activating it requires mounting the
+coordinator in the production `Runner` and demonstrating delegation and recovery;
+until then the diagram must retain the dashed, not-mounted boundary.
+
+## Active governed paths
+
+### Hosted Gemini triage
+
+1. Deterministic gates resolve identity, tenant, injection and duplicate status.
+2. Only queued mail reaches `contextops_intake`.
+3. Gemini extracts summary, intent and explicit urgency phrases.
+4. ADK forces one `score_priority` call; the tool returns the already-computed
+   deterministic priority.
+5. The response and audit record keep `external_write: false`.
+
+### Portfolio approval
+
+The interactive control room runs a deterministic application workflow. It evaluates
+hours, spend, client communications and cross-account reach, then displays an approval
+packet and simulated calls with shared idempotency keys. That shared execution logic
+lives in import-free `lib/contextops/execution.ts` so both web and agent builds use the
+same definitions. This UI workflow is not an ADK long-running/resumable workflow.
 
 ## Hackathon evidence map
 
-| Requirement | Implemented evidence | Honest boundary |
+| Requirement | Current evidence | Honest boundary |
 |---|---|---|
-| Gemini 3.5 or newer | `gemini-3.7-flash`; a successful Cloud Build smoke used ADC to call Vertex AI and exercised four triage cases | The same path through the Cloud Run URL is not yet verified |
-| Google Agent Framework | ADK `Runner`, one `LlmAgent`, one `FunctionTool`, `SecurityPlugin` | No `SequentialAgent` or `LongRunningFunctionTool` |
-| Google Cloud | Ready Cloud Run revisions in two Australia regions; successful Cloud Build-to-Vertex smoke (`e8a0c467-5940-4777-ba0a-7cf788a61444`) | Google-front 404 currently blocks hosted endpoint proof |
-| Discovery & lifecycle | 10 generated local Unit contracts | Cloud discovery is behind `CONTEXTOPS_CLOUD_REGISTRY=false` |
-| State and memory | ADK in-memory session and memory verified | Vertex persistence is wired but disabled and not live-verified |
-| Security and governance | deterministic pre-model gates plus `ContextOpsPolicyEngine` tests | No Model Armor or cloud identity federation |
-| Telemetry | audit spans plus JSON and formula-safe CSV | Cloud exporter is prepared, not yet evidenced online |
+| Gemini 3.5+ | Hosted `/status` reports `gemini-3.7-flash`, `vertex`, `global`; `evidence/live-triage-cloudrun.json` records a real model tool call | Model extracts; deterministic code decides |
+| Google Agent Framework | Production uses ADK `Runner`, `LlmAgent`, forced `FunctionTool`, in-memory Session/Memory services and `SecurityPlugin` | Three-tier `SequentialAgent` is constructed/tested but not mounted |
+| Google Cloud | Public Cloud Run service in `australia-southeast2`; `/status`, `/fleet` and `/triage` are reachable | `/healthz` alone returns an unresolved Google-front 404 |
+| Agent Registry | 10 generated local Unit contracts served by `/registry` | Cloud Agent Registry discovery disabled |
+| Agent Runtime | Active ADK request runtime | No long-running, asynchronous or cross-restart recovery proof |
+| Memory Bank | Vertex services selectable by configuration | Submission uses in-memory state; persistent path not enabled or live-verified |
+| Agent Identity | Deterministic application roles and tenant gates | No Google Cloud agent identity or SSO |
+| Agent Gateway | `ContextOpsPolicyEngine` performs pre-tool ALLOW/DENY/CONFIRM checks | No Google Agent Gateway service; hosted POST has no auth/rate limit |
+| Model Armor | Deterministic pre-model injection and protected-file gates | Google Model Armor not integrated |
+| Agent Observability | JSON/CSV audit and OTel span creation; forced flush implemented and tested | Cloud Trace landing must be re-verified after deployment |
 
-## Deliberate exclusions
+## Verification baseline
 
+- 83 automated tests: 36 root (31 core + 5 rendered HTTP) and 47 agent.
 - No live connectors or external writes.
-- No production identities or customer data; every email uses a `.example` domain.
-- No persistent state claim in this submission: `CONTEXTOPS_STATE_BACKEND=memory`.
-- No Cloud Agent Registry claim: `CONTEXTOPS_CLOUD_REGISTRY=false`.
-- No regional inference or data-residency claim: the model endpoint is `global`.
+- No production identities or customer data; all email addresses use `.example`.
+- Cloud discovery and Vertex persistence remain disabled.
+- The public cost-bearing `/triage` route needs a rate limiter and bounded batches;
+  `max-instances=1` is not a request or spend cap.
