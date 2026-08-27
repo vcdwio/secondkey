@@ -99,8 +99,8 @@ npm run lint
 npx tsc --noEmit
 ```
 
-The current verified total is **83 tests**: 36 in the root suite (31 core + 5
-rendered HTTP checks) and 47 in `agent/`.
+The current verified total is **84 tests**: 36 in the root suite (31 core + 5
+rendered HTTP checks) and 48 in `agent/`.
 
 Validate the fixture pack independently:
 
@@ -136,7 +136,7 @@ Agent endpoints:
 - `GET /status` — runtime, state backend, model, registry count, telemetry mode.
 - `GET /fleet` — the three constructed fleet tiers, exact tool sets, write reach and human-gate policy. This proves the definition, not that the fleet is mounted in `/triage`.
 - `GET /healthz` — local alias of `/status`; the same path is intercepted with 404 on the current Cloud Run route, for an unresolved platform-front-door reason.
-- `POST /triage` — fixture email triage with deterministic safety gates.
+- `POST /triage` — fixture email triage with deterministic safety gates; requires an explicit batch of 1–2 `email_ids` and is globally limited to 10 requests per 10 minutes by default.
 - `GET /sessions/:id?user_id=<id>` — ADK session recovery.
 - `GET /registry` — synchronized ten-Unit registry plus an explicitly enabled Cloud discovery count.
 - `GET /audit.json` and `GET /audit.csv` — write-disabled compliance exports.
@@ -215,7 +215,7 @@ gcloud run deploy secondkey-agent \
   --service-account secondkey-runner@YOUR_PROJECT_ID.iam.gserviceaccount.com \
   --allow-unauthenticated \
   --max-instances=1 \
-  --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,GEMINI_MODEL=gemini-3.7-flash,CONTEXTOPS_STATE_BACKEND=memory,CONTEXTOPS_TELEMETRY=gcp,CONTEXTOPS_UI_ORIGIN=https://secondkey.vcdw-io.workers.dev
+  --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,GEMINI_MODEL=gemini-3.7-flash,CONTEXTOPS_STATE_BACKEND=memory,CONTEXTOPS_TELEMETRY=gcp,CONTEXTOPS_UI_ORIGIN=https://secondkey.vcdw-io.workers.dev,CONTEXTOPS_TRIAGE_RATE_LIMIT=10,CONTEXTOPS_TRIAGE_RATE_WINDOW_MS=600000
 ```
 
 Cloud Run targets an Australia region; Gemini inference uses the Vertex AI
@@ -225,9 +225,11 @@ data residency. Keep the service private until its invocation
 policy is chosen, then verify `/status`, one real `/triage` request, and the
 corresponding Vertex/Cloud trace before wiring `NEXT_PUBLIC_AGENT_URL`.
 
-`--max-instances=1` limits scale, not request rate or spend. A public
-`POST /triage` still needs an application/gateway rate limit and a bounded
-`email_ids` batch before this can be treated as a cost-safe production endpoint.
+`--max-instances=1` limits scale, not request rate or spend. The submission adds a
+single-instance global rate window and a two-id batch cap so the public judge endpoint
+is bounded, but that in-memory control is not a production distributed gateway. Keep
+max instances at one, add quota/budget alerts, and remove public invocation after
+judging unless it becomes an explicit product requirement.
 
 For a private service, verify with an identity token rather than making the
 cost-bearing triage endpoint public:

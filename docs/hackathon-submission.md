@@ -14,7 +14,7 @@
 | Hosted Cloud Run URL | Verified | public service in `australia-southeast2`; `/status`, `/fleet`, `/registry`, `/audit.*` and `/triage` respond |
 | `/healthz` | Known exception | local alias works; Cloud Run front door returns 404, so published checks use `/status` |
 | Hosted frontend URL | Verified interactive demo | `/` cover and `/app` control room work; current build says `local endpoint` and does not depend on Cloud Run |
-| Tests | Verified locally | 83 total: 36 root (31 core + 5 rendered HTTP), 47 agent |
+| Tests | Verified locally | 84 total: 36 root (31 core + 5 rendered HTTP), 48 agent |
 
 Cloud Run executes in `australia-southeast2`, while Gemini 3.7 Flash inference uses
 Vertex AI's `global` endpoint through runtime service-account ADC. No Australian
@@ -50,7 +50,7 @@ model-processing or data-residency claim is made.
    rule, decision trace, idempotency keys and rollback.
 6. **3:25–3:50 — Google Cloud proof.** Show Cloud Run service/region/URL, `/status`,
    Vertex model evidence and a matching Cloud Trace span if available.
-7. **3:50–4:00 — Honest close.** 83 tests; fleet constructed but not mounted; persistent
+7. **3:50–4:00 — Honest close.** 84 tests; fleet constructed but not mounted; persistent
    memory, cloud identity/gateway and Model Armor not implemented in the submission.
 
 Do not present `/fleet` JSON as proof of live multi-agent delegation. If the fleet is
@@ -72,13 +72,12 @@ not mounted before recording, say exactly that and frame it as the primary next 
 
 ## Public cost gate
 
-`POST /triage` is unauthenticated and invokes Vertex. The current Cloud Run settings
-are max instances 1, concurrency 80, timeout 300 seconds. One request without
-`email_ids` processes the 30-message pack and can make 18 model calls. Max instances
-therefore limits scale but does not cap requests or spend. Before leaving the endpoint
-public for judging, add a server-side rate limiter, cap batches to two ids, and create
-quota/budget alerts; after judging, remove `allUsers` unless public invocation is a
-product requirement.
+`POST /triage` is unauthenticated and invokes Vertex. Cloud Run is max instances 1,
+concurrency 80, timeout 300 seconds. The server now requires 1–2 explicit ids and
+allows 10 triage requests per global 10-minute in-memory window, reducing the default
+worst case from 18 model calls per request to two. This depends on max instances 1 and
+is not a distributed hard spend cap. Add quota/budget alerts and remove `allUsers`
+after judging unless public invocation becomes a product requirement.
 
 ## Final submission fields
 

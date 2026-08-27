@@ -50,6 +50,20 @@ function telemetryMode(env: Record<string, string | undefined>): TelemetryMode {
   return mode;
 }
 
+function positiveInteger(
+  env: Record<string, string | undefined>,
+  name: string,
+  fallback: number,
+) {
+  const raw = env[name]?.trim();
+  if (!raw) return fallback;
+  const parsed = Number(raw);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(`${name} must be a positive integer`);
+  }
+  return parsed;
+}
+
 export function createApp(dependencies: AppDependencies = {}) {
   const env = dependencies.env ?? process.env;
   const services = dependencies.services ?? createAgentServices(env);
@@ -58,6 +72,10 @@ export function createApp(dependencies: AppDependencies = {}) {
   const model = env.GEMINI_MODEL ?? "gemini-3.7-flash";
   const modelAccess = describeGeminiAccess(env);
   const mode = telemetryMode(env);
+  const triageRateLimit = positiveInteger(env, "CONTEXTOPS_TRIAGE_RATE_LIMIT", 10);
+  const triageRateWindowMs = positiveInteger(env, "CONTEXTOPS_TRIAGE_RATE_WINDOW_MS", 600_000);
+  let triageWindowStartedAt = Date.now();
+  let triageRequestsInWindow = 0;
   let adkRequester: ToolCallRequester | undefined = dependencies.requestToolCall;
 
   const getRequester = () => {
@@ -174,27 +192,48 @@ export function createApp(dependencies: AppDependencies = {}) {
       const inbound = loadRawInbound(repoRoot);
       const context = loadFixtureContext(repoRoot);
       const rawIds = request.body?.email_ids;
-      if (rawIds !== undefined && !Array.isArray(rawIds)) {
-        throw new HttpError(400, "email_ids must be an array of strings");
+      if (!Array.isArray(rawIds)) {
+        throw new HttpError(400, "email_ids is required and must be an array of strings");
+      }
+      if (rawIds.length < 1 || rawIds.length > 2) {
+        throw new HttpError(400, "email_ids must contain between 1 and 2 identifiers");
       }
       const emailIds = rawIds?.filter(
         (value: unknown): value is string => typeof value === "string",
-      ) as string[] | undefined;
-      if (rawIds && emailIds?.length !== rawIds.length) {
+      ) as string[];
+      if (emailIds.length !== rawIds.length) {
         throw new HttpError(400, "email_ids must be an array of strings");
       }
-      const requestedIds = emailIds ? new Set(emailIds) : null;
-      if (requestedIds) {
-        const availableIds = new Set(inbound.map((email) => email.id));
-        const unknownIds = [...requestedIds].filter((id) => !availableIds.has(id));
-        if (unknownIds.length) {
-          throw new HttpError(400, `Unknown email_ids: ${unknownIds.join(", ")}`);
-        }
+      const requestedIds = new Set(emailIds);
+      const availableIds = new Set(inbound.map((email) => email.id));
+      const unknownIds = [...requestedIds].filter((id) => !availableIds.has(id));
+      if (unknownIds.length) {
+        throw new HttpError(400, `Unknown email_ids: ${unknownIds.join(", ")}`);
       }
 
-      const selected = requestedIds
-        ? inbound.filter((email) => requestedIds.has(email.id))
-        : inbound;
+      const now = Date.now();
+      if (now - triageWindowStartedAt >= triageRateWindowMs) {
+        triageWindowStartedAt = now;
+        triageRequestsInWindow = 0;
+      }
+      if (triageRequestsInWindow >= triageRateLimit) {
+        const retryAfterSeconds = Math.max(
+          1,
+          Math.ceil((triageRateWindowMs - (now - triageWindowStartedAt)) / 1000),
+        );
+        response.setHeader("Retry-After", String(retryAfterSeconds));
+        response.setHeader("X-RateLimit-Limit", String(triageRateLimit));
+        response.status(429).json({
+          external_write: false,
+          error: "Triage rate limit reached; retry after the current window",
+        });
+        return;
+      }
+      triageRequestsInWindow += 1;
+      response.setHeader("X-RateLimit-Limit", String(triageRateLimit));
+      response.setHeader("X-RateLimit-Remaining", String(triageRateLimit - triageRequestsInWindow));
+
+      const selected = inbound.filter((email) => requestedIds.has(email.id));
       const results = [];
       for (const email of selected) {
         const result = await processEmailTriage(email, inbound, context, getRequester());

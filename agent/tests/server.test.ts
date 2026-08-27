@@ -26,6 +26,7 @@ interface AuditHttpEvent {
 
 async function withServer(
   callback: (baseUrl: string, services: ReturnType<typeof createAgentServices>) => Promise<void>,
+  env: Record<string, string> = {},
 ) {
   const services = createAgentServices({});
   const app = createApp({
@@ -33,6 +34,7 @@ async function withServer(
       GEMINI_MODEL: "gemini-test-model",
       CONTEXTOPS_TELEMETRY: "off",
       CONTEXTOPS_UI_ORIGIN: "https://fleet.example",
+      ...env,
     },
     services,
     auditStore: new AuditStore(),
@@ -91,20 +93,32 @@ test("health and registry expose the fortified runtime without writes", async ()
 
 test("triage endpoint enforces deterministic gates and emits retraceable audits", async () => {
   await withServer(async (baseUrl) => {
-    const response = await fetch(`${baseUrl}/triage`, {
+    const firstResponse = await fetch(`${baseUrl}/triage`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email_ids: ["EM-001", "EM-023", "EM-025", "EM-030"] }),
+      body: JSON.stringify({ email_ids: ["EM-001", "EM-023"] }),
     });
-    assert.equal(response.status, 200);
-    const body = await response.json() as {
+    assert.equal(firstResponse.status, 200);
+    const firstBody = await firstResponse.json() as {
       external_write: boolean;
       processed_count: number;
       results: TriageHttpResult[];
     };
-    assert.equal(body.external_write, false);
-    assert.equal(body.processed_count, 4);
-    const byId = new Map(body.results.map((result) => [result.email_id, result]));
+    const secondResponse = await fetch(`${baseUrl}/triage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email_ids: ["EM-025", "EM-030"] }),
+    });
+    assert.equal(secondResponse.status, 200);
+    const secondBody = await secondResponse.json() as {
+      external_write: boolean;
+      processed_count: number;
+      results: TriageHttpResult[];
+    };
+    assert.equal(firstBody.external_write, false);
+    assert.equal(secondBody.external_write, false);
+    assert.equal(firstBody.processed_count + secondBody.processed_count, 4);
+    const byId = new Map([...firstBody.results, ...secondBody.results].map((result) => [result.email_id, result]));
     assert.equal(byId.get("EM-001")?.priority, "P0");
     assert.equal(byId.get("EM-023")?.outcome, "quarantine");
     assert.equal(byId.get("EM-025")?.duplicate_of, "EM-001");
@@ -131,6 +145,45 @@ test("triage endpoint enforces deterministic gates and emits retraceable audits"
     const csv = await csvResponse.text();
     assert.equal(csv.split("\n")[0], "time,component,actor,role,message,evidence,task_id");
     assert.match(csv, /EM-023/);
+  });
+});
+
+test("triage requires a bounded batch and rate-limits cost-bearing calls", async () => {
+  await withServer(async (baseUrl) => {
+    const missing = await fetch(`${baseUrl}/triage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    assert.equal(missing.status, 400);
+    assert.match((await missing.json() as { error: string }).error, /email_ids is required/i);
+
+    const oversized = await fetch(`${baseUrl}/triage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email_ids: ["EM-001", "EM-023", "EM-025"] }),
+    });
+    assert.equal(oversized.status, 400);
+    assert.match((await oversized.json() as { error: string }).error, /between 1 and 2/i);
+
+    const first = await fetch(`${baseUrl}/triage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email_ids: ["EM-023"] }),
+    });
+    assert.equal(first.status, 200);
+
+    const limited = await fetch(`${baseUrl}/triage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email_ids: ["EM-023"] }),
+    });
+    assert.equal(limited.status, 429);
+    assert.ok(Number(limited.headers.get("retry-after")) >= 1);
+    assert.equal((await limited.json() as { external_write: boolean }).external_write, false);
+  }, {
+    CONTEXTOPS_TRIAGE_RATE_LIMIT: "1",
+    CONTEXTOPS_TRIAGE_RATE_WINDOW_MS: "60000",
   });
 });
 

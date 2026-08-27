@@ -22,7 +22,7 @@ the selected track's multi-agent judging criterion.
 | Agent Runtime | **Implemented** (request-scoped only) | Cloud Run executes the ADK intake Runner; there is no long-running asynchronous workflow, durable approval pause or cross-restart recovery |
 | Memory Bank | **Wired, not enabled** | `agent/src/services.ts` can select Vertex Session/Memory services, but hosted `/status` reports `state_backend:memory`; no persistent live proof |
 | Agent Identity | **Not implemented** | Roles/tenant identity come from the fictional fixture and deterministic application checks; no Cloud agent identity, workforce federation, SSO or directory sync |
-| Agent Gateway | **Not implemented** | `ContextOpsPolicyEngine` is an in-process pre-tool policy layer, not Google Agent Gateway; the public POST endpoint has no authentication or rate limit |
+| Agent Gateway | **Not implemented** | `ContextOpsPolicyEngine` is an in-process pre-tool policy layer, not Google Agent Gateway; public POST is unauthenticated, though it now has a two-id cap and single-instance global rate window |
 | Model Armor | **Not implemented** | `securityReasons()` deterministically blocks injection/protected-file requests before Gemini; Google Model Armor is not called |
 | Agent Observability | **Implemented locally; cloud landing conditional** | audit JSON/CSV and OTel spans exist, exporter and request-end flush are tested; only a visible post-deploy `contextops.audit.*` span upgrades Cloud Trace to verified |
 
@@ -70,8 +70,9 @@ SecondKey/ADK/cloud work built during the period.
    coordinator that routes by required authority, prove the three agents execute, and
    add failure recovery. The existing `SequentialAgent` emits an ADK deprecation
    warning, so do not deepen that dependency without checking the supported migration.
-2. **P0 — Protect public `/triage`.** Cap to two ids, add server-side rate limiting and
-   quota/budget alerts; remove public invoker after judging.
+2. **P0 — Finish protecting public `/triage`.** The two-id cap and server-side global
+   rate window are implemented; add quota/budget alerts and remove public invoker after
+   judging.
 3. **P0 — Record an unedited agent call plus Cloud Run/Vertex/Trace proof within the
    first four minutes.** UI-only execution does not prove the hosted agent.
 4. **P1 — Reframe the end user if honest product evidence supports it.** The current

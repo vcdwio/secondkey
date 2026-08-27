@@ -153,15 +153,16 @@ same definitions. This UI workflow is not an ADK long-running/resumable workflow
 | Agent Runtime | Active ADK request runtime | No long-running, asynchronous or cross-restart recovery proof |
 | Memory Bank | Vertex services selectable by configuration | Submission uses in-memory state; persistent path not enabled or live-verified |
 | Agent Identity | Deterministic application roles and tenant gates | No Google Cloud agent identity or SSO |
-| Agent Gateway | `ContextOpsPolicyEngine` performs pre-tool ALLOW/DENY/CONFIRM checks | No Google Agent Gateway service; hosted POST has no auth/rate limit |
+| Agent Gateway | `ContextOpsPolicyEngine` performs pre-tool ALLOW/DENY/CONFIRM checks; public triage has a global in-memory rate window and two-id cap | No Google Agent Gateway service or authentication; the rate guard depends on max instances 1 |
 | Model Armor | Deterministic pre-model injection and protected-file gates | Google Model Armor not integrated |
 | Agent Observability | JSON/CSV audit and OTel span creation; forced flush implemented and tested | Cloud Trace landing must be re-verified after deployment |
 
 ## Verification baseline
 
-- 83 automated tests: 36 root (31 core + 5 rendered HTTP) and 47 agent.
+- 84 automated tests: 36 root (31 core + 5 rendered HTTP) and 48 agent.
 - No live connectors or external writes.
 - No production identities or customer data; all email addresses use `.example`.
 - Cloud discovery and Vertex persistence remain disabled.
-- The public cost-bearing `/triage` route needs a rate limiter and bounded batches;
-  `max-instances=1` is not a request or spend cap.
+- Public `/triage` requires 1–2 ids and is limited to 10 requests per 10-minute
+  in-memory global window; max instances must stay at one. This is a demo guard, not
+  production authentication or a hard billing cap.
