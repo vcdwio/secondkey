@@ -714,7 +714,7 @@ export function ContextOpsControlRoom() {
 }
 
 const VIEW_TITLES: Record<ViewId, string> = {
-  brief: "Seven clients. Three available people. One decision.",
+  brief: "Seven clients. Four available people. One decision.",
   queue: "Every request, and why it sits where it sits",
   approval: "One decision is waiting on a person",
   value: "What the machine actually saved",

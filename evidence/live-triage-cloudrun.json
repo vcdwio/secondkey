@@ -1,7 +1,8 @@
 {
-  "_captured": "Live POST /triage against Cloud Run, Vertex AI backend, 2026-08-26",
+  "_captured": "Live POST /triage against Cloud Run revision secondkey-agent-00004-7vb, Vertex AI backend, 2026-08-28",
   "_service": "https://secondkey-agent-689501174668.australia-southeast2.run.app",
   "_request": { "email_ids": ["EM-001", "EM-023"] },
+  "_rate_limit": { "limit": 10, "remaining_after_request": 9, "window_ms": 600000 },
   "external_write": false,
   "processed_count": 2,
   "results": [
@@ -19,8 +20,8 @@
       "tool_call": {
         "name": "score_priority",
         "args": {
-          "summary": "Five priority shipments display Friday ETAs on the dashboard instead of confirmed Wednesday ETAs ahead of an executive preview tomorrow at 4pm",
-          "intent": "Confirm ownership within two hours and verify whether Wednesday production launch is still credible",
+          "summary": "Five priority shipments are displaying Friday ETAs instead of Wednesday ETAs ahead of an executive preview scheduled for tomorrow at 4pm.",
+          "intent": "Confirm ownership within two hours and verify credibility of Wednesday production launch given incorrect shipment ETAs on the dashboard ahead of executive preview.",
           "urgency_mentions": ["URGENT", "before tomorrow executive preview", "tomorrow at 4pm", "within two hours"]
         },
         "result": {

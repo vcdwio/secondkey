@@ -24,7 +24,7 @@ the selected track's multi-agent judging criterion.
 | Agent Identity | **Not implemented** | Roles/tenant identity come from the fictional fixture and deterministic application checks; no Cloud agent identity, workforce federation, SSO or directory sync |
 | Agent Gateway | **Not implemented** | `ContextOpsPolicyEngine` is an in-process pre-tool policy layer, not Google Agent Gateway; public POST is unauthenticated, though it now has a two-id cap and single-instance global rate window |
 | Model Armor | **Not implemented** | `securityReasons()` deterministically blocks injection/protected-file requests before Gemini; Google Model Armor is not called |
-| Agent Observability | **Implemented locally; cloud landing conditional** | audit JSON/CSV and OTel spans exist, exporter and request-end flush are tested; only a visible post-deploy `contextops.audit.*` span upgrades Cloud Trace to verified |
+| Agent Observability | **Implemented** | audit JSON/CSV, OTel spans and request-end flush are tested; the final revision produced two verified `contextops.audit.Intake___Triage` spans in Cloud Trace |
 
 ## 3. Selected-track reality check
 

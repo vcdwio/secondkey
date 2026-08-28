@@ -70,8 +70,8 @@ FunctionTool 去问，问到什么就是什么。
 我们先写了审批门、审计链、权限矩阵和注入防护，再把真实 Gemini 提取接进 ADK
 `Runner`、`LlmAgent`、`FunctionTool` 和 `SecurityPlugin`。OpenTelemetry 已接本地审计；
 Vertex 持久层、Cloud Registry 发现仍只是接线或配置，未在线验证。Cloud Run 的
-Gemini/Vertex ADC 路径已由 `/status` 和真实 `/triage` 证据验证；Cloud Trace 落库只在
-最终部署后查到 span 时才算验证。
+Gemini/Vertex ADC 路径已由 `/status` 和真实 `/triage` 证据验证；最终部署后 Cloud
+Trace 也查到了 EM-001/QUEUED 与 EM-023/QUARANTINE 两个 audit span。
 
 **这条的价值**：证明我们**理解**这些组件解决什么问题，不是照着教程调 API。
 被问到"为什么用 GEAP"时，答案是"因为我们先自己造过一遍，知道它替我们省了什么"。
@@ -146,7 +146,7 @@ Gemini/Vertex ADC 路径已由 `/status` 和真实 `/triage` 证据验证；Clou
 - **是什么**：OpenTelemetry 标准的跨组件遥测，可承载调用和策略轨迹。
 - **我们**：每条审计记录创建一个 OTel span，属性带 actor、role、evidence_ids、
   task_id、policy_outcome，并可导出 JSON 和 CSV。GCP exporter 和请求末尾强制 flush
-  已实现、已测；只有 Cloud Trace Explorer 里实际出现 span 才能说线上已验证。
+  已实现、已测；最终 revision 已在线验证两个 `contextops.audit.Intake___Triage` span。
 - **被追问"三个月后客户投诉怎么查"**：
   > "导出那次任务的完整 span 树。每一步用了哪条证据、哪个策略版本、谁批的、
   > 批的时候写了什么理由，全都在。"
@@ -296,8 +296,8 @@ agent 不行。要说"**人只在不可逆边界介入**"。
 
 **被追问"那线上跑的路径测了吗"**（这是最锋利的一问，提前准备）：
 > "测了 Cloud Run `/status` 和一条真实 `/triage`；EM-001 走了 Gemini 工具调用，
-> EM-023 在模型前被隔离，证据在 `evidence/live-triage-cloudrun.json`。Cloud Trace
-> 仍要看最终部署后的 span；没看到就只说 exporter 已实现、已测。"
+> EM-023 在模型前被隔离，证据在 `evidence/live-triage-cloudrun.json`；对应的两个
+> audit span 在 `evidence/cloud-trace-after-flush.json`。"
 
 ### Q15「无障碍做了吗？」
 > "之前的 axe-core 审核覆盖七个界面并记录为零违规；这不是 84 个当前测试的一部分。

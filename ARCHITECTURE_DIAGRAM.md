@@ -49,7 +49,7 @@ flowchart TB
       SA["secondkey-runner service account"]
       STATE["In-memory Session + Memory<br/>Vertex persistence wired, disabled"]
       REG["10-entry local registry<br/>Cloud discovery disabled"]
-      TRACE["Cloud Trace exporter<br/>configured; final flush verification required"]
+      TRACE["Cloud Trace exporter<br/>forced flush · live spans verified"]
       CR --> SA --> VAI
       CR --> STATE
       CR --> REG
@@ -63,13 +63,16 @@ flowchart TB
     classDef prepared fill:#e8f0fe,stroke:#1a73e8,color:#174ea6,stroke-dasharray:5 5
     class WEB,DATA,GATES,TRIAGE,VAI,AUDIT,CR,SA,STATE,REG live
     class CORE,POLICY,CONSTRUCT deterministic
-    class COORD,DRAFT,INTERNAL,EXTERNAL,TRACE prepared
+    class TRACE live
+    class COORD,DRAFT,INTERNAL,EXTERNAL prepared
 ```
 
 Cloud Run executes in `australia-southeast2`; Gemini uses Vertex AI's `global`
 location. SecondKey therefore makes no Australia-pinned inference or data-residency
-claim. The current hosted UI shows `local endpoint` because it was built without
-`NEXT_PUBLIC_AGENT_URL`; its demo remains functional but is not calling Cloud Run.
+claim. The current hosted UI was built with `NEXT_PUBLIC_AGENT_URL` and shows
+`Google ADK runtime · ready · writes disabled` after a successful cross-origin
+`/status` probe. Its Monday scenario remains the deterministic in-browser demo;
+the badge verifies backend reachability, not that every UI step calls Cloud Run.
 
 ## Authority-partitioned fleet enforcement
 
@@ -155,7 +158,7 @@ same definitions. This UI workflow is not an ADK long-running/resumable workflow
 | Agent Identity | Deterministic application roles and tenant gates | No Google Cloud agent identity or SSO |
 | Agent Gateway | `ContextOpsPolicyEngine` performs pre-tool ALLOW/DENY/CONFIRM checks; public triage has a global in-memory rate window and two-id cap | No Google Agent Gateway service or authentication; the rate guard depends on max instances 1 |
 | Model Armor | Deterministic pre-model injection and protected-file gates | Google Model Armor not integrated |
-| Agent Observability | JSON/CSV audit and OTel span creation; forced flush implemented and tested | Cloud Trace landing must be re-verified after deployment |
+| Agent Observability | JSON/CSV audit, OTel span creation and request-end forced flush; two `contextops.audit.Intake___Triage` spans verified in Cloud Trace | Current exporter is deprecated and must migrate to OTLP before 2026-10-30 |
 
 ## Verification baseline
 

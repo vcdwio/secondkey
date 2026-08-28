@@ -199,12 +199,12 @@ npm run dev           # localhost:3000
 这一段 12–15 秒，放在收尾之前：
 
 1. Cloud Run 控制台，服务 `secondkey-agent` running
-2. `.run.app` 的 `/healthz` 返回（`external_write:false` / `model_backend:vertex` / `model_location:global`）
-3. Cloud Logging 里那条 `aiplatform` 调用
+2. `.run.app` 的 `/status` 返回（`external_write:false` / `model_backend:vertex` / `model_location:global`）
+3. Cloud Trace Explorer 用 `span:contextops.audit.` 过滤后显示两个 audit span
 
 **台词**：
 > "部署在 Cloud Run，模型走 Vertex，服务账号 ADC，服务本身不带任何 key。
-> 这是那次真实请求在 Cloud Logging 里留下的记录。"
+> 这是那次真实请求在 Cloud Trace 里留下的审计 span。"
 
 截图发我，我先看清晰度——控制台字号在 1080p 下经常糊。
 

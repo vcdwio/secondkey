@@ -151,7 +151,8 @@ we have not verified end to end.
   `CONTEXTOPS_CLOUD_REGISTRY` and is off in this build
 - **OpenTelemetry** — audit spans carry actor, role, evidence ids and policy outcome;
   the Google Cloud exporter and request-end flush are implemented and unit-tested.
-  Cloud Trace landing is claimed only if the final deployed trace is visible.
+  The final Cloud Run request produced two verified
+  `contextops.audit.Intake___Triage` spans for the queued and quarantined emails.
 - **TypeScript / React / Vite** — the operator control room, six views
 - **Node test runner and ESLint** — 84 automated tests (36 root + 48 agent) and zero lint errors. A prior
   axe-core audit recorded zero WCAG 2.1 AA violations across seven surfaces.
@@ -191,7 +192,7 @@ eleven actions run on their own precisely *because* the boundary is real.
 
 **Replaying a fixture is not an algorithm.** The capacity reallocation was read
 straight from the validated pack. It looked correct and answered nothing, because the
-first question anyone asks is "seven clients, three people — how did you solve it?"
+first question anyone asks is "seven clients, four available people — how did you solve it?"
 Writing the real solver, and asserting that its output still reproduces the pack's
 twelve hours, was the change that made the decision defensible.
 

@@ -1,0 +1,26 @@
+{
+  "_captured": "Cloud Trace API, 2026-08-28T09:31:02.634Z",
+  "_revision": "secondkey-agent-00004-7vb",
+  "_filter": "span:contextops.audit.",
+  "trace_count": 2,
+  "spans": [
+    {
+      "name": "contextops.audit.Intake___Triage",
+      "task_id": "EM-001",
+      "actor": "CL-BH",
+      "role": "Client Contact",
+      "evidence_ids": "EM-001",
+      "policy_outcome": "QUEUED",
+      "external_write": "false"
+    },
+    {
+      "name": "contextops.audit.Intake___Triage",
+      "task_id": "EM-023",
+      "actor": "support@harbourdata.example",
+      "role": "Unresolved Sender",
+      "evidence_ids": "EM-023",
+      "policy_outcome": "QUARANTINE",
+      "external_write": "false"
+    }
+  ]
+}

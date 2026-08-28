@@ -26,7 +26,7 @@ export function EvalPanel() {
           <b>{`${evals.length} / ${evals.length}`}</b> baseline pass
         </span>
         <span>
-          <b>{units.size}</b> Units covered
+          <b>{units.size}</b> Evaluation domains
         </span>
         <span>
           <b>{approvalGated}</b> approval-gated

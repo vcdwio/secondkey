@@ -46,7 +46,7 @@ test("server-renders the SecondKey governed-agent command surface", async () => 
   assert.match(html, /<title>SecondKey — Control Room<\/title>/i);
   assert.match(html, /Autonomy until it matters\./);
   assert.match(html, /The agent holds the first key\. Irreversible actions wait for yours\./);
-  assert.match(html, /Seven clients\. Three available people\. One decision\./);
+  assert.match(html, /Seven clients\. Four available people\. One decision\./);
   assert.match(html, /BlueHarbor Logistics/);
   assert.match(html, /Elevate Learning/);
   assert.match(html, /external_write: false/);
@@ -76,6 +76,7 @@ test("renders the input-output, connector, and quality-gate blueprint", async ()
   assert.match(html, /Input \/ Output map/);
   assert.match(html, /API \/ MCP readiness/);
   assert.match(html, /25 regression scenarios/);
+  assert.match(html, /Evaluation domains/);
   assert.match(html, /Demo adapters/);
   assert.match(html, /Live connectors locked/);
 });

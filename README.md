@@ -35,8 +35,8 @@ decision-bearing fields are:
       "tool_call": {
         "name": "score_priority",
         "args": {
-          "summary": "Five priority shipments display Friday ETAs on the dashboard instead of confirmed Wednesday ETAs ahead of an executive preview tomorrow at 4pm",
-          "intent": "Confirm ownership within two hours and verify whether Wednesday production launch is still credible",
+          "summary": "Five priority shipments are displaying Friday ETAs instead of Wednesday ETAs ahead of an executive preview scheduled for tomorrow at 4pm.",
+          "intent": "Confirm ownership within two hours and verify credibility of Wednesday production launch given incorrect shipment ETAs on the dashboard ahead of executive preview.",
           "urgency_mentions": ["URGENT", "before tomorrow executive preview", "tomorrow at 4pm", "within two hours"]
         },
         "result": {
@@ -58,6 +58,11 @@ decision-bearing fields are:
 `tool_call.args` is Gemini's extraction. `tool_call.result` is the deterministic
 server-owned decision returned by the tool. EM-023 is quarantined before the
 model, so its `tool_call` is `null`.
+
+After the same request on Cloud Run revision `secondkey-agent-00004-7vb`, Cloud
+Trace returned two `contextops.audit.Intake___Triage` spans: EM-001/`QUEUED` and
+EM-023/`QUARANTINE`, both with `external_write:false`. The redacted trace evidence
+is committed at [`evidence/cloud-trace-after-flush.json`](evidence/cloud-trace-after-flush.json).
 
 ## Included
 
@@ -170,12 +175,15 @@ Cloud Agent Registry discovery is independently prepared and defaults off. Set
 `CONTEXTOPS_CLOUD_REGISTRY=true` only after that cloud resource is deployed and
 verified; model project/location variables alone never enable it.
 
-Set `CONTEXTOPS_TELEMETRY=gcp` only in a Google-authenticated runtime. Set
+Set `CONTEXTOPS_TELEMETRY=gcp` only in a Google-authenticated runtime. The final
+Cloud Run deployment verified the two audit spans above after request-end
+`forceFlush()`. Set
 `CONTEXTOPS_UI_ORIGIN=https://secondkey.vcdw-io.workers.dev` for cross-origin
 status checks. Build the frontend with `NEXT_PUBLIC_AGENT_URL` set to the Cloud
 Run service URL; otherwise it honestly shows `local endpoint`. The current
-hosted frontend shows `local endpoint`, so its interactive scenario is the
-deterministic in-browser demo and does not call Cloud Run.
+hosted frontend shows `ready · writes disabled` after a successful `/status`
+probe. Its interactive Monday scenario is still the deterministic in-browser
+demo; the badge is reachability evidence, not proof that each UI step calls Cloud Run.
 
 `lib/contextops/execution.ts` intentionally has no imports. Both the frontend
 and agent service consume the same simulated-call and idempotency-key logic

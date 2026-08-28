@@ -16,7 +16,7 @@
 | 会话状态 | `CONTEXTOPS_STATE_BACKEND=memory`（Vertex 持久层已接线未启用） |
 | Agent Registry | 本地 10 个 Unit，`CONTEXTOPS_CLOUD_REGISTRY=false` |
 | 遥测 | `CONTEXTOPS_TELEMETRY=gcp`，**但 Cloud Trace 里查不到 span —— 见 Task A** |
-| 测试 | **82**：根 36（31 + 5 渲染）+ agent 46 |
+| 测试 | **84**：根 36（31 + 5 渲染）+ agent 48 |
 | Agent 架构 | 三层舰队，工具集不相交，见 `agent/src/fleet.ts` |
 | 可用端点 | `/status` `/fleet` `/registry` `/audit.json` `/audit.csv` POST `/triage` |
 | 已知异常 | **`/healthz` 在 Cloud Run 上返回 404**，本地正常，同服务其他路由正常。原因未查明，已用 `/status` 绕开 |
@@ -80,7 +80,7 @@ async function flushSpans(): Promise<void> {
 
 ### B1 · 测试数字全部过期
 
-以下文件里的测试数还是 **61 / 66 / 69**，真实是 **82（根 36 + agent 46）**：
+以下文件里的测试数还是 **61 / 66 / 69**，最终真实是 **84（根 36 + agent 48）**：
 
 - `PITCH_PREP.md` — 第 19 行配置卡、第 283、289、294、327、356 行
 - `DEVPOST_SUBMISSION.md` — "Technologies used" 和 "Accomplishments" 两处

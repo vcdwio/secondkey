@@ -10,10 +10,10 @@
 | Deterministic business decisions | Implemented | priority, identity, authorization, capacity, spend and approval functions; the model only extracts |
 | State and memory | Local in-memory verified; Vertex prepared | `CONTEXTOPS_STATE_BACKEND=memory`; no cross-restart or multi-week proof |
 | Discovery and lifecycle | Local registry verified; Cloud query disabled | ten generated Unit entries; `CONTEXTOPS_CLOUD_REGISTRY=false` |
-| Telemetry | Local spans and forced flush verified | Cloud exporter enabled; Cloud Trace landing must be re-verified after final deployment |
+| Telemetry | Verified locally and in Cloud Trace | final revision produced two `contextops.audit.Intake___Triage` spans; redacted evidence committed |
 | Hosted Cloud Run URL | Verified | public service in `australia-southeast2`; `/status`, `/fleet`, `/registry`, `/audit.*` and `/triage` respond |
 | `/healthz` | Known exception | local alias works; Cloud Run front door returns 404, so published checks use `/status` |
-| Hosted frontend URL | Verified interactive demo | `/` cover and `/app` control room work; current build says `local endpoint` and does not depend on Cloud Run |
+| Hosted frontend URL | Verified interactive demo + backend status probe | `/` cover and `/app` work; current build shows `ready · writes disabled` after cross-origin `/status`; the Monday scenario itself remains deterministic in-browser |
 | Tests | Verified locally | 84 total: 36 root (31 core + 5 rendered HTTP), 48 agent |
 
 Cloud Run executes in `australia-southeast2`, while Gemini 3.7 Flash inference uses
@@ -49,7 +49,7 @@ model-processing or data-residency claim is made.
 5. **2:50–3:25 — Security and audit.** Fire prompt injection; show the exact blocking
    rule, decision trace, idempotency keys and rollback.
 6. **3:25–3:50 — Google Cloud proof.** Show Cloud Run service/region/URL, `/status`,
-   Vertex model evidence and a matching Cloud Trace span if available.
+   Vertex model evidence and the verified Cloud Trace spans.
 7. **3:50–4:00 — Honest close.** 84 tests; fleet constructed but not mounted; persistent
    memory, cloud identity/gateway and Model Armor not implemented in the submission.
 
@@ -63,10 +63,10 @@ not mounted before recording, say exactly that and frame it as the primary next 
 - `GET /fleet` with the three agents and their exact tools/human gates, explicitly
   labelled as construction evidence.
 - Real `/triage` response for EM-001 and EM-023.
-- Matching `contextops.audit.*` Cloud Trace span after the final flush deployment; if
-  absent, use the documented downgrade and do not claim cloud observability.
-- Frontend `/` and `/app`; status badge should show either truthful `local endpoint` or
-  `ready · writes disabled` after CORS and build-time endpoint wiring.
+- Matching `contextops.audit.Intake___Triage` spans for EM-001/QUEUED and
+  EM-023/QUARANTINE from revision `secondkey-agent-00004-7vb`.
+- Frontend `/` and `/app`; the deployed status badge shows `ready · writes disabled`
+  after CORS and build-time endpoint wiring.
 - Configuration screenshots must redact environment values and never show any key,
   token or credential.
 
