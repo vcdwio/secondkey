@@ -51,7 +51,7 @@ architecture diagram or `/fleet` response to imply that the live path already do
 
 | Rule | Status | Action/evidence |
 |---|---|---|
-| Repository + reproducible spin-up | **Ready locally** | README contains install, test, deploy and three hosted verification commands; final clean-clone proof required after push |
+| Repository + reproducible spin-up | **Verified from GitHub** | Fresh clone of pushed `main` passed install, lint, 36 root tests, 48 agent tests and both production-only dependency audits |
 | Architecture diagram | **Ready and honest** | `ARCHITECTURE_DIAGRAM.md` separates active, constructed/tested and disabled paths |
 | Hosted project | **Ready** | `/` cover, `/app` control room and public Cloud Run endpoints verified |
 | Video ≤4 minutes | **Pending user action** | Public YouTube/Vimeo, English or English subtitles; show unedited live execution and Google Cloud visual proof |
