@@ -11,7 +11,7 @@
 | State and memory | Local in-memory verified; Vertex prepared | `CONTEXTOPS_STATE_BACKEND=memory`; no cross-restart or multi-week proof |
 | Discovery and lifecycle | Local registry verified; Cloud query disabled | ten generated Unit entries; `CONTEXTOPS_CLOUD_REGISTRY=false` |
 | Telemetry | Verified locally and in Cloud Trace | final revision produced two `contextops.audit.Intake___Triage` spans; redacted evidence committed |
-| Hosted Cloud Run URL | Verified | public service in `australia-southeast2`; `/status`, `/fleet`, `/registry`, `/audit.*` and `/triage` respond |
+| Hosted Cloud Run URL | Verified | revision `secondkey-agent-00005-h2f` serves 100% in `australia-southeast2`; `/status`, `/fleet`, `/registry`, `/audit.*` and `/triage` respond; `/fleet/run` is mounted but fails closed at its 15-call ceiling |
 | `/healthz` | Known exception | local alias works; Cloud Run front door returns 404, so published checks use `/status` |
 | Hosted frontend URL | Verified interactive demo + backend status probe | `/` cover and `/app` work; current build shows `ready · writes disabled` after cross-origin `/status`; the Monday scenario itself remains deterministic in-browser |
 | Tests | Verified locally | 87 total: 36 root (31 core + 5 rendered HTTP), 51 agent |

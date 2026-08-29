@@ -141,10 +141,13 @@ we have not verified end to end.
   focused `LlmAgent`, one forced `FunctionTool`, in-memory session/memory services and
   `SecurityPlugin`; a separate three-`LlmAgent` `SequentialAgent` is mounted at
   `/fleet/run`, but has not passed the all-three-agents live acceptance test
-- **Google Cloud Run** — public service in `australia-southeast2`; `/status`, `/fleet`,
-  `/registry` and `/triage` are reachable. Model inference uses Vertex's `global`
-  endpoint, so we make no claim about where inference or data resides. `/healthz`
-  remains an isolated unresolved 404 and is not the published health endpoint.
+- **Google Cloud Run** — public revision `secondkey-agent-00005-h2f` in
+  `australia-southeast2`; `/status`, `/fleet`, `/registry` and `/triage` return
+  successful responses. `/fleet/run` is mounted but currently reaches its 15-call
+  ceiling and returns a sanitized fail-closed 500, so it is not counted as successful
+  multi-agent evidence. Model inference uses Vertex's `global` endpoint, so we make no
+  claim about where inference or data resides. `/healthz` remains an isolated
+  unresolved 404 and is not the published health endpoint.
 - **Vertex AI Session Service and Memory Bank** — wired behind
   `CONTEXTOPS_STATE_BACKEND`, so cross-session context switches on with one variable
   and a provisioned Agent Engine id. The submitted build ships with in-memory state;

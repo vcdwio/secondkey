@@ -9,7 +9,7 @@ current source/deployed endpoints. Status means evidence, not aspiration.
 |---|---|---|---|
 | 1 | Gemini 3.5+ through Gemini API or Vertex AI | **Met** | Hosted `/status` reports `gemini-3.7-flash`, `model_backend:vertex`, `model_location:global`; `evidence/live-triage-cloudrun.json` records a real hosted tool call |
 | 2 | At least one Google agent framework | **Met** | Active `/triage` constructs and invokes ADK `Runner`, `LlmAgent`, forced `FunctionTool`, Session/Memory services and `SecurityPlugin` in `agent/src/adk.ts` |
-| 3 | At least one Google Cloud infrastructure service | **Met** | Public Cloud Run service responds at `/status`, `/fleet` and `/triage` in `australia-southeast2` |
+| 3 | At least one Google Cloud infrastructure service | **Met** | Public Cloud Run revision `secondkey-agent-00005-h2f` serves 100% of traffic in `australia-southeast2`; `/status`, `/fleet` and `/triage` respond, while the mounted `/fleet/run` fails closed at its 15-call ceiling |
 
 These three baseline technology requirements are met. This does not by itself prove
 the selected track's multi-agent judging criterion.

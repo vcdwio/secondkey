@@ -157,7 +157,7 @@ same definitions. This UI workflow is not an ADK long-running/resumable workflow
 |---|---|---|
 | Gemini 3.5+ | Hosted `/status` reports `gemini-3.7-flash`, `vertex`, `global`; `evidence/live-triage-cloudrun.json` records a real model tool call | Model extracts; deterministic code decides |
 | Google Agent Framework | Production uses ADK `Runner`, `LlmAgent`, forced `FunctionTool`, in-memory Session/Memory services and `SecurityPlugin`; `/fleet/run` mounts a separate three-tier `SequentialAgent` | Real Gemini has not produced tool calls from all three tiers in one accepted run |
-| Google Cloud | Public Cloud Run service in `australia-southeast2`; `/status`, `/fleet` and `/triage` are reachable | `/healthz` alone returns an unresolved Google-front 404 |
+| Google Cloud | Public Cloud Run revision `secondkey-agent-00005-h2f` in `australia-southeast2`; `/status`, `/fleet`, `/fleet/run` and `/triage` are reachable | `/fleet/run` currently fails closed at its 15-call ceiling; `/healthz` still returns an unresolved Google-front 404 |
 | Agent Registry | 10 generated local Unit contracts served by `/registry` | Cloud Agent Registry discovery disabled |
 | Agent Runtime | Active ADK request runtime | No long-running, asynchronous or cross-restart recovery proof |
 | Memory Bank | Vertex services selectable by configuration | Submission uses in-memory state; persistent path not enabled or live-verified |

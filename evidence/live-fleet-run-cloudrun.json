@@ -1,0 +1,27 @@
+{
+  "_captured": "Live POST /fleet/run against Cloud Run revision secondkey-agent-00005-h2f, Vertex AI backend, 2026-08-29T04:08:16Z",
+  "_service": "https://secondkey-agent-689501174668.australia-southeast2.run.app",
+  "_request": {
+    "account_id": "CL-BH",
+    "role": "Delivery Manager"
+  },
+  "_http": {
+    "status": 500,
+    "rate_limit": 10,
+    "remaining_after_request": 9,
+    "window_ms": 600000
+  },
+  "_cloud_log_observation": {
+    "vertex_provider_requests": 15,
+    "configured_max_llm_calls": 15,
+    "note": "The ADK guard refused the next model call before another provider request. No request body, credential or model output is included in this evidence."
+  },
+  "_acceptance": {
+    "passed": false,
+    "reason": "The request reached the per-run LLM-call ceiling before returning a three-agent delegation array. This is mounted-route and fail-closed evidence, not successful multi-agent delegation evidence."
+  },
+  "response": {
+    "external_write": false,
+    "error": "Agent request failed closed"
+  }
+}

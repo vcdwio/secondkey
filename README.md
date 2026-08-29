@@ -22,6 +22,21 @@ curl -sX POST https://secondkey-agent-689501174668.australia-southeast2.run.app/
   -d '{"email_ids":["EM-001","EM-023"]}'
 ```
 
+The fleet command above was verified on revision `secondkey-agent-00005-h2f`.
+It reached the configured 15-LLM-call ceiling and failed closed instead of returning
+an incomplete delegation as success:
+
+```json
+{"external_write":false,"error":"Agent request failed closed"}
+```
+
+The response carried `X-RateLimit-Limit: 10` and `X-RateLimit-Remaining: 9`.
+Cloud logs showed exactly 15 Vertex provider requests before the ADK limit refused
+the next call. The redacted evidence is
+[`evidence/live-fleet-run-cloudrun.json`](evidence/live-fleet-run-cloudrun.json).
+This proves the route is deployed and the guard fails closed; it does **not** prove
+successful three-agent delegation.
+
 The verified triage response is stored at
 [`evidence/live-triage-cloudrun.json`](evidence/live-triage-cloudrun.json). Its
 decision-bearing fields are:
@@ -62,7 +77,7 @@ decision-bearing fields are:
 server-owned decision returned by the tool. EM-023 is quarantined before the
 model, so its `tool_call` is `null`.
 
-After the same request on Cloud Run revision `secondkey-agent-00004-7vb`, Cloud
+After the same triage request on Cloud Run revision `secondkey-agent-00004-7vb`, Cloud
 Trace returned two `contextops.audit.Intake___Triage` spans: EM-001/`QUEUED` and
 EM-023/`QUARANTINE`, both with `external_write:false`. The redacted trace evidence
 is committed at [`evidence/cloud-trace-after-flush.json`](evidence/cloud-trace-after-flush.json).
