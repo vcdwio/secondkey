@@ -32,7 +32,6 @@ import {
   getFunctionCalls,
   type BaseAgent,
 } from "@google/adk";
-import { FunctionCallingConfigMode } from "@google/genai";
 
 import { ContextOpsPolicyEngine } from "./policy.js";
 import { DRAFT_TOOLS, EXTERNAL_TOOLS, INTERNAL_TOOLS } from "./tools.js";
@@ -108,14 +107,22 @@ function tierAgent({
     tools,
     generateContentConfig: {
       temperature: 0,
-      toolConfig: {
-        functionCallingConfig: {
-          mode: FunctionCallingConfigMode.ANY,
-          // Belt and braces: the model is pinned to this tier's names even if a
-          // future refactor accidentally widens the tool array.
-          allowedFunctionNames: tools.map((tool) => tool.name),
-        },
-      },
+      /**
+       * No toolConfig at all — and that is the correct shape, not a compromise.
+       *
+       * The two settings are a package: `allowedFunctionNames` may only be set
+       * when the mode is ANY, and ANY forces a function call on *every* turn,
+       * so a tier can never finish with text and hand over. Under ANY the
+       * sequence stalls on the second agent and burns its call budget; setting
+       * AUTO while keeping the name list is rejected outright by the API.
+       *
+       * Dropping the pair costs nothing, because it was never what isolated the
+       * tiers. Each agent is constructed with its own `tools` array, so a tool
+       * outside that array is never declared to the model — it cannot be named,
+       * let alone called. `allowedFunctionNames` restated a restriction the tool
+       * set already enforced, `agent/tests/fleet.test.ts` asserts the arrays
+       * stay disjoint, and ContextOpsPolicyEngine re-checks every call on top.
+       */
     },
   });
 }
