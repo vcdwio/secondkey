@@ -4,14 +4,16 @@ import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import express from "express";
 
+import { AUTHORITY_MATRIX } from "../../lib/contextops/authority.js";
 import {
   CONTEXTOPS_APP_NAME,
+  buildGeminiModel,
   createAdkTriageRuntime,
   describeGeminiAccess,
   resolveGeminiAccess,
 } from "./adk.js";
 import { resolveAgentRoot } from "./config.js";
-import { FLEET_TIERS } from "./fleet.js";
+import { FLEET_TIERS, createFleetRuntime, type FleetRunResult } from "./fleet.js";
 import { loadFixtureContext, loadRawInbound, resolveRepoRoot } from "./inbound.js";
 import { REGISTRY_ENTRIES, createRegistryService } from "./registry.js";
 import { createAgentServices, type AgentServiceBundle } from "./services.js";
@@ -74,9 +76,33 @@ export function createApp(dependencies: AppDependencies = {}) {
   const mode = telemetryMode(env);
   const triageRateLimit = positiveInteger(env, "CONTEXTOPS_TRIAGE_RATE_LIMIT", 10);
   const triageRateWindowMs = positiveInteger(env, "CONTEXTOPS_TRIAGE_RATE_WINDOW_MS", 600_000);
+  const fleetMaxLlmCalls = positiveInteger(env, "CONTEXTOPS_FLEET_MAX_LLM_CALLS", 15);
   let triageWindowStartedAt = Date.now();
   let triageRequestsInWindow = 0;
   let adkRequester: ToolCallRequester | undefined = dependencies.requestToolCall;
+
+  /**
+   * Built on first use, like the triage runtime: constructing it needs Gemini
+   * access, and a service with no model configured must still serve /status,
+   * /fleet and /registry rather than failing to start.
+   */
+  let fleetRun: ((input: { accountId: string; role: string; userId: string }) => Promise<FleetRunResult>) | undefined;
+  const getFleetRun = () => {
+    if (fleetRun) return fleetRun;
+    try {
+      const access = resolveGeminiAccess(env);
+      fleetRun = createFleetRuntime({
+        model: buildGeminiModel(access, model),
+        services,
+        appName: CONTEXTOPS_APP_NAME,
+        maxLlmCalls: fleetMaxLlmCalls,
+      }).run;
+      return fleetRun;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Gemini access is unavailable";
+      throw new HttpError(503, message);
+    }
+  };
 
   const getRequester = () => {
     if (adkRequester) return adkRequester;
@@ -91,6 +117,31 @@ export function createApp(dependencies: AppDependencies = {}) {
       const message = error instanceof Error ? error.message : "Gemini access is unavailable";
       throw new HttpError(503, message);
     }
+  };
+
+  const consumeCostBearingRequest = (response: express.Response) => {
+    const now = Date.now();
+    if (now - triageWindowStartedAt >= triageRateWindowMs) {
+      triageWindowStartedAt = now;
+      triageRequestsInWindow = 0;
+    }
+    if (triageRequestsInWindow >= triageRateLimit) {
+      const retryAfterSeconds = Math.max(
+        1,
+        Math.ceil((triageRateWindowMs - (now - triageWindowStartedAt)) / 1000),
+      );
+      response.setHeader("Retry-After", String(retryAfterSeconds));
+      response.setHeader("X-RateLimit-Limit", String(triageRateLimit));
+      response.status(429).json({
+        external_write: false,
+        error: "Agent rate limit reached; retry after the current window",
+      });
+      return false;
+    }
+    triageRequestsInWindow += 1;
+    response.setHeader("X-RateLimit-Limit", String(triageRateLimit));
+    response.setHeader("X-RateLimit-Remaining", String(triageRateLimit - triageRequestsInWindow));
+    return true;
   };
 
   const app = express();
@@ -153,6 +204,28 @@ export function createApp(dependencies: AppDependencies = {}) {
     });
   });
 
+  /**
+   * Run the fleet, and report which agent reached for which tool.
+   *
+   * GET /fleet says what each tier is allowed to do. This proves the split is
+   * live: the `delegation` array is built from the actual run, so an agent
+   * cannot be listed beside a tool its tier was never constructed with.
+   */
+  app.post("/fleet/run", async (request, response, next) => {
+    try {
+      const accountId = typeof request.body?.account_id === "string" ? request.body.account_id : "CL-BH";
+      const role = typeof request.body?.role === "string" ? request.body.role : "Delivery Manager";
+      if (!AUTHORITY_MATRIX[role]) {
+        throw new HttpError(400, `Unknown role: ${role}`);
+      }
+      if (!consumeCostBearingRequest(response)) return;
+      const result = await getFleetRun()({ accountId, role, userId: `fleet-${role.replaceAll(" ", "-")}` });
+      response.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.get("/registry", async (_request, response, next) => {
     try {
       response.json(await registryService.list());
@@ -211,27 +284,7 @@ export function createApp(dependencies: AppDependencies = {}) {
         throw new HttpError(400, `Unknown email_ids: ${unknownIds.join(", ")}`);
       }
 
-      const now = Date.now();
-      if (now - triageWindowStartedAt >= triageRateWindowMs) {
-        triageWindowStartedAt = now;
-        triageRequestsInWindow = 0;
-      }
-      if (triageRequestsInWindow >= triageRateLimit) {
-        const retryAfterSeconds = Math.max(
-          1,
-          Math.ceil((triageRateWindowMs - (now - triageWindowStartedAt)) / 1000),
-        );
-        response.setHeader("Retry-After", String(retryAfterSeconds));
-        response.setHeader("X-RateLimit-Limit", String(triageRateLimit));
-        response.status(429).json({
-          external_write: false,
-          error: "Triage rate limit reached; retry after the current window",
-        });
-        return;
-      }
-      triageRequestsInWindow += 1;
-      response.setHeader("X-RateLimit-Limit", String(triageRateLimit));
-      response.setHeader("X-RateLimit-Remaining", String(triageRateLimit - triageRequestsInWindow));
+      if (!consumeCostBearingRequest(response)) return;
 
       const selected = inbound.filter((email) => requestedIds.has(email.id));
       const results = [];
@@ -259,7 +312,7 @@ export function createApp(dependencies: AppDependencies = {}) {
   app.use((error: unknown, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
     void _next;
     const status = error instanceof HttpError ? error.status : 500;
-    const message = error instanceof HttpError ? error.message : "Triage failed closed";
+    const message = error instanceof HttpError ? error.message : "Agent request failed closed";
     response.status(status).json({ external_write: false, error: message });
   });
 

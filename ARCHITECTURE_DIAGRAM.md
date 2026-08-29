@@ -4,11 +4,12 @@
 
 ## Submission architecture
 
-Solid arrows are executed in the hosted submission. Dashed arrows are implemented
-and tested but disabled or not mounted. This distinction matters: SecondKey contains
-a three-agent authority-partitioned fleet, but the hosted `/triage` route still runs
-the single-purpose intake agent. `/fleet` proves the fleet definition and tool
-partition; it does not prove live delegation.
+Solid arrows are executed in the hosted submission. Dashed styling marks capabilities
+that are implemented but not fully verified. `/triage` remains the proven
+single-purpose intake path. A separate `/fleet/run` route now executes the three-agent
+coordinator, but a real local Gemini run did not produce tool calls from all three
+tiers after the permitted two instruction-only attempts. Mounting is verified;
+complete three-agent delegation is not.
 
 ```mermaid
 flowchart TB
@@ -25,7 +26,9 @@ flowchart TB
     GATES -->|queued only| TRIAGE --> VAI
     TRIAGE --> AUDIT
 
-    subgraph FLEET["CONSTRUCTED + TESTED · not mounted in hosted Runner"]
+    FLEET_ROUTE["ACTIVE /fleet/run<br/>ADK Runner · max 15 LLM calls/request"]
+
+    subgraph FLEET["MOUNTED + TESTED · three-tier completion unverified"]
       COORD["secondkey_fleet<br/>SequentialAgent"]
       DRAFT["draft_agent<br/>list_queue · build_context_packet<br/>humanGate: never"]
       INTERNAL["internal_commit_agent<br/>list_queue · commit_internal_change · rollback_changes<br/>humanGate: beyond role limits"]
@@ -42,7 +45,7 @@ flowchart TB
       EXTERNAL --> POLICY
     end
 
-    FLEET -.->|createFleet is test-only today| TRIAGE
+    FLEET_ROUTE --> COORD
 
     subgraph CLOUD["Hosted Google Cloud path"]
       CR["Cloud Run<br/>australia-southeast2 · public"]
@@ -57,11 +60,12 @@ flowchart TB
     end
 
     TRIAGE --> CR
+    FLEET_ROUTE --> CR
 
     classDef live fill:#e6f4ea,stroke:#188038,color:#0d652d
     classDef deterministic fill:#fef7e0,stroke:#f9ab00,color:#8a5a12
     classDef prepared fill:#e8f0fe,stroke:#1a73e8,color:#174ea6,stroke-dasharray:5 5
-    class WEB,DATA,GATES,TRIAGE,VAI,AUDIT,CR,SA,STATE,REG live
+    class WEB,DATA,GATES,TRIAGE,FLEET_ROUTE,VAI,AUDIT,CR,SA,STATE,REG live
     class CORE,POLICY,CONSTRUCT deterministic
     class TRACE live
     class COORD,DRAFT,INTERNAL,EXTERNAL prepared
@@ -121,10 +125,12 @@ sequenceDiagram
     E->>X: produce held-for-human-send draft<br/>external_write remains false
 ```
 
-This fleet is real code with 12 targeted tests, but `createFleet()` is currently
-referenced only by `agent/tests/fleet.test.ts`. Activating it requires mounting the
-coordinator in the production `Runner` and demonstrating delegation and recovery;
-until then the diagram must retain the dashed, not-mounted boundary.
+This fleet is real code with 15 targeted tests and a production route. The original
+real local run observed allowed calls from `draft_agent` and
+`internal_commit_agent`; `external_commitment_agent` was invoked by the sequential
+coordinator but emitted no tool call. Two instruction-only attempts did not improve
+that to all three agents and were reverted. The tool partition is structural and the
+route is mounted, but the response is not accepted as full delegation evidence.
 
 ## Active governed paths
 
@@ -150,22 +156,23 @@ same definitions. This UI workflow is not an ADK long-running/resumable workflow
 | Requirement | Current evidence | Honest boundary |
 |---|---|---|
 | Gemini 3.5+ | Hosted `/status` reports `gemini-3.7-flash`, `vertex`, `global`; `evidence/live-triage-cloudrun.json` records a real model tool call | Model extracts; deterministic code decides |
-| Google Agent Framework | Production uses ADK `Runner`, `LlmAgent`, forced `FunctionTool`, in-memory Session/Memory services and `SecurityPlugin` | Three-tier `SequentialAgent` is constructed/tested but not mounted |
+| Google Agent Framework | Production uses ADK `Runner`, `LlmAgent`, forced `FunctionTool`, in-memory Session/Memory services and `SecurityPlugin`; `/fleet/run` mounts a separate three-tier `SequentialAgent` | Real Gemini has not produced tool calls from all three tiers in one accepted run |
 | Google Cloud | Public Cloud Run service in `australia-southeast2`; `/status`, `/fleet` and `/triage` are reachable | `/healthz` alone returns an unresolved Google-front 404 |
 | Agent Registry | 10 generated local Unit contracts served by `/registry` | Cloud Agent Registry discovery disabled |
 | Agent Runtime | Active ADK request runtime | No long-running, asynchronous or cross-restart recovery proof |
 | Memory Bank | Vertex services selectable by configuration | Submission uses in-memory state; persistent path not enabled or live-verified |
 | Agent Identity | Deterministic application roles and tenant gates | No Google Cloud agent identity or SSO |
-| Agent Gateway | `ContextOpsPolicyEngine` performs pre-tool ALLOW/DENY/CONFIRM checks; public triage has a global in-memory rate window and two-id cap | No Google Agent Gateway service or authentication; the rate guard depends on max instances 1 |
+| Agent Gateway | `ContextOpsPolicyEngine` performs pre-tool ALLOW/DENY/CONFIRM checks; both cost-bearing routes share a global in-memory rate window, triage has a two-id cap, and a fleet run has a 15-call ceiling | No Google Agent Gateway service or authentication; the rate guard depends on max instances 1 |
 | Model Armor | Deterministic pre-model injection and protected-file gates | Google Model Armor not integrated |
 | Agent Observability | JSON/CSV audit, OTel span creation and request-end forced flush; two `contextops.audit.Intake___Triage` spans verified in Cloud Trace | Current exporter is deprecated and must migrate to OTLP before 2026-10-30 |
 
 ## Verification baseline
 
-- 84 automated tests: 36 root (31 core + 5 rendered HTTP) and 48 agent.
+- 87 automated tests: 36 root (31 core + 5 rendered HTTP) and 51 agent.
 - No live connectors or external writes.
 - No production identities or customer data; all email addresses use `.example`.
 - Cloud discovery and Vertex persistence remain disabled.
-- Public `/triage` requires 1–2 ids and is limited to 10 requests per 10-minute
-  in-memory global window; max instances must stay at one. This is a demo guard, not
-  production authentication or a hard billing cap.
+- Public `/triage` requires 1–2 ids; `/triage` and `/fleet/run` share 10 requests per
+  10-minute in-memory global window, and one fleet run is capped at 15 LLM calls.
+  Max instances must stay at one. This is a demo guard, not production authentication
+  or a hard billing cap.

@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { Gemini, PolicyOutcome } from "@google/adk";
+import { BaseLlm, Gemini, PolicyOutcome } from "@google/adk";
 
-import { createFleet, FLEET_TIERS } from "../src/fleet.js";
+import { createFleet, createFleetRuntime, FLEET_TIERS } from "../src/fleet.js";
 import { ContextOpsPolicyEngine } from "../src/policy.js";
+import { createAgentServices } from "../src/services.js";
 import {
   commitInternalChange,
   DRAFT_TOOLS,
@@ -136,4 +137,87 @@ test("the external tool refuses to run at all without a confirmation context", a
       }) as Promise<unknown>,
     /requires confirmation/i,
   );
+});
+
+/* ------------------------------------------------- the fleet is mounted */
+
+test("the fleet runtime is reachable from the service, not only from tests", async () => {
+  // The gap this closes: for a while /fleet published a capability split that
+  // nothing in production ever ran. A described split is a diagram.
+  //
+  // With no model configured the route answers 503 ("Gemini access is
+  // unavailable") — which is the point: a 404 would mean it was never mounted,
+  // and 503 can only come from the handler itself.
+  const { createApp } = await import("../src/server.js");
+  const app = createApp({ env: { CONTEXTOPS_STATE_BACKEND: "memory", CONTEXTOPS_TELEMETRY: "off" } });
+  const server = app.listen(0);
+  try {
+    const port = (server.address() as { port: number }).port;
+    const res = await fetch(`http://127.0.0.1:${port}/fleet/run`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ account_id: "CL-BH", role: "Delivery Manager" }),
+    });
+    assert.notEqual(res.status, 404, "POST /fleet/run must be mounted");
+    assert.ok([200, 503].includes(res.status), `unexpected status ${res.status}`);
+  } finally {
+    server.close();
+  }
+});
+
+test("an unknown role is refused before any model call", async () => {
+  const { createApp } = await import("../src/server.js");
+  const app = createApp({ env: { CONTEXTOPS_STATE_BACKEND: "memory", CONTEXTOPS_TELEMETRY: "off" } });
+  const server = app.listen(0);
+  try {
+    const port = (server.address() as { port: number }).port;
+    const res = await fetch(`http://127.0.0.1:${port}/fleet/run`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ account_id: "CL-BH", role: "Chief Wizard" }),
+    });
+    assert.equal(res.status, 400);
+  } finally {
+    server.close();
+  }
+});
+
+test("the fleet runtime caps a looping model before one request can spend without bound", async () => {
+  class EndlessToolModel extends BaseLlm {
+    calls = 0;
+
+    constructor() {
+      super({ model: "endless-test-model" });
+    }
+
+    async *generateContentAsync() {
+      this.calls += 1;
+      if (this.calls > 5) throw new Error("fake model safety stop");
+      yield {
+        content: {
+          role: "model" as const,
+          parts: [{ functionCall: { id: `call-${this.calls}`, name: "list_queue", args: {} } }],
+        },
+      };
+    }
+
+    async connect(): Promise<never> {
+      throw new Error("live mode is not used by this test");
+    }
+  }
+
+  const model = new EndlessToolModel();
+  const runtimeConfig = {
+    model,
+    services: createAgentServices({}),
+    appName: "fleet-limit-test",
+    maxLlmCalls: 1,
+  };
+  const runtime = createFleetRuntime(runtimeConfig);
+
+  await assert.rejects(
+    () => runtime.run({ accountId: "CL-BH", role: "Delivery Manager", userId: "limit-test" }),
+    /Max number of llm calls limit of 1 exceeded/i,
+  );
+  assert.equal(model.calls, 1, "the second model request must be refused before it reaches the provider");
 });

@@ -91,13 +91,15 @@ tool does not trust a model-supplied priority; it returns the value already comp
 by deterministic server rules. Identity, tenant access, prompt-injection quarantine
 and duplicate handling run before the model is called.
 
-We also constructed and unit-tested `secondkey_fleet`, a `SequentialAgent` with three
+We also constructed, mounted and unit-tested `secondkey_fleet`, a `SequentialAgent` with three
 authority-partitioned `LlmAgent` tiers: draft-only, reversible internal commit, and
 always-confirmed external commitment. Their tool sets and `allowedFunctionNames` do
 not overlap, and `ContextOpsPolicyEngine` independently returns ALLOW, DENY or CONFIRM
-before execution. This fleet is exposed as inspectable metadata at `/fleet`, but
-`createFleet()` is not yet mounted in the hosted Runner. We therefore do not claim
-that the live service currently delegates between multiple agents.
+before execution. `/fleet` exposes the partition and `POST /fleet/run` executes the
+separate coordinator. In real local Gemini verification, the original run emitted
+allowed calls from the draft and internal tiers but no external-tier tool call. Two
+instruction-only attempts still did not complete all three tiers, so we reverted them
+and do not claim successful three-agent delegation.
 
 The hosted configuration reaches Vertex AI through the Cloud Run runtime service
 account's Application Default Credentials, so no Gemini key is injected into the
@@ -111,8 +113,9 @@ returns the exact hours, spend, communication and account limits that were excee
 the UI then requires the General Manager's decision note before simulated execution.
 An ADK `SecurityPlugin` backed by `ContextOpsPolicyEngine` is implemented and tested
 to deny unauthorized writes and cross-account context tool calls before execution.
-The current triage agent exposes only `score_priority`, and the fleet is not mounted,
-so we do not claim a hosted ADK confirmation or long-running recovery flow.
+The current triage agent exposes only `score_priority`; the mounted fleet is a separate
+experimental route whose external tier still lacks accepted live tool-call evidence.
+We therefore do not claim a hosted ADK confirmation or long-running recovery flow.
 
 Nothing on screen is hand-written. `npm run data` reads only the fixture pack and
 generates the portfolio model; if a number cannot be derived from the data or returned
@@ -136,8 +139,8 @@ we have not verified end to end.
   `/status` and real `/triage` evidence verify this path.
 - **Google ADK for TypeScript** (`@google/adk` v2) — the live path uses `Runner`, one
   focused `LlmAgent`, one forced `FunctionTool`, in-memory session/memory services and
-  `SecurityPlugin`; a three-`LlmAgent` `SequentialAgent` fleet is separately
-  constructed and tested but not mounted in production
+  `SecurityPlugin`; a separate three-`LlmAgent` `SequentialAgent` is mounted at
+  `/fleet/run`, but has not passed the all-three-agents live acceptance test
 - **Google Cloud Run** — public service in `australia-southeast2`; `/status`, `/fleet`,
   `/registry` and `/triage` are reachable. Model inference uses Vertex's `global`
   endpoint, so we make no claim about where inference or data resides. `/healthz`
@@ -154,7 +157,7 @@ we have not verified end to end.
   The final Cloud Run request produced two verified
   `contextops.audit.Intake___Triage` spans for the queued and quarantined emails.
 - **TypeScript / React / Vite** — the operator control room, six views
-- **Node test runner and ESLint** — 84 automated tests (36 root + 48 agent) and zero lint errors. A prior
+- **Node test runner and ESLint** — 87 automated tests (36 root + 51 agent) and zero lint errors. A prior
   axe-core audit recorded zero WCAG 2.1 AA violations across seven surfaces.
 
 ---
@@ -196,6 +199,12 @@ first question anyone asks is "seven clients, four available people — how did 
 Writing the real solver, and asserting that its output still reproduces the pack's
 twelve hours, was the change that made the decision defensible.
 
+**Forced tool loops are not delegation.** The fleet pins each tier to its own tools
+with ADK `ANY` function-calling mode. The real model sometimes repeated one tier's
+tools instead of handing useful work through all three. We limited each request to 15
+LLM calls, made model-error events fail closed, and reported the incomplete run rather
+than counting the mounted route as multi-agent proof.
+
 **Platform-bound dependencies.** Native bindings (`rolldown`, `esbuild`) ship per
 platform, so a `node_modules` tree copied between macOS and Linux fails in ways that
 look like code errors. Costly to diagnose the first time; now documented in
@@ -211,7 +220,7 @@ look like code errors. Costly to diagnose the first time; now documented in
   cross-account reach, plus a pre-execution ADK policy check for protected tool calls.
 - Rollback that admits its own limits: nine changes restore cleanly, and the two that
   cannot be undone are labelled as such rather than pretended away.
-- 84 automated tests (36 root + 48 agent), zero lint errors, a prior seven-surface axe audit with zero
+- 87 automated tests (36 root + 51 agent), zero lint errors, a prior seven-surface axe audit with zero
   violations, and a body-text floor of 12px — the governance story is legible on a
   projector, which is where it actually has to work.
 

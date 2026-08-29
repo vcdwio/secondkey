@@ -9,11 +9,14 @@ SecondKey is a governed enterprise-agent demo for Verge Consulting: ten customer
 The hosted frontend is split deliberately: [`/`](https://secondkey.vcdw-io.workers.dev/)
 is the two-minute product cover and [`/app`](https://secondkey.vcdw-io.workers.dev/app)
 is the interactive control room. The public Cloud Run service can be checked in
-three commands:
+four commands:
 
 ```bash
 curl -s https://secondkey-agent-689501174668.australia-southeast2.run.app/status
 curl -s https://secondkey-agent-689501174668.australia-southeast2.run.app/fleet
+curl -sX POST https://secondkey-agent-689501174668.australia-southeast2.run.app/fleet/run \
+  -H "Content-Type: application/json" \
+  -d '{"account_id":"CL-BH","role":"Delivery Manager"}'
 curl -sX POST https://secondkey-agent-689501174668.australia-southeast2.run.app/triage \
   -H "Content-Type: application/json" \
   -d '{"email_ids":["EM-001","EM-023"]}'
@@ -76,7 +79,7 @@ is committed at [`evidence/cloud-trace-after-flush.json`](evidence/cloud-trace-a
 - Value case with editable assumptions, and a go-live checklist for Live.
 - Full audit trail with actor and evidence on every event, exportable as JSON.
 - Google ADK `Runner`, `FunctionTool`, `SecurityPlugin`, Session Service, Memory Service, Agent Registry query adapter, and OpenTelemetry audit spans.
-- A constructed and unit-tested authority-partitioned fleet: draft, reversible internal commit, and always-confirmed external commitment tiers with disjoint tools. This fleet is not yet mounted in the hosted `/triage` Runner; `/fleet` exposes its construction metadata for inspection.
+- A mounted and unit-tested authority-partitioned fleet: draft, reversible internal commit, and always-confirmed external commitment tiers with disjoint tools. `POST /fleet/run` executes its coordinator; `/fleet` exposes construction metadata. Real local Gemini verification did not complete all three tool-calling tiers, so this submission does not claim successful three-agent delegation.
 - Optimistic capacity reservations: approval moves the visible state from lock v1 to reserved v2; rollback releases it at v3.
 - Input/output map and API/MCP readiness matrix.
 - Validated fictional Verge data pack: 10 staff, 7 clients, 30 emails, 25 Eval scenarios.
@@ -104,8 +107,8 @@ npm run lint
 npx tsc --noEmit
 ```
 
-The current verified total is **84 tests**: 36 in the root suite (31 core + 5
-rendered HTTP checks) and 48 in `agent/`.
+The current verified total is **87 tests**: 36 in the root suite (31 core + 5
+rendered HTTP checks) and 51 in `agent/`.
 
 Validate the fixture pack independently:
 
@@ -139,7 +142,8 @@ the four required acceptance cases without printing the key.
 Agent endpoints:
 
 - `GET /status` — runtime, state backend, model, registry count, telemetry mode.
-- `GET /fleet` — the three constructed fleet tiers, exact tool sets, write reach and human-gate policy. This proves the definition, not that the fleet is mounted in `/triage`.
+- `GET /fleet` — the three constructed fleet tiers, exact tool sets, write reach and human-gate policy.
+- `POST /fleet/run` — runs the separate `secondkey_fleet` coordinator and reports observed tool calls by agent. It shares the public cost window with `/triage` and has a 15-LLM-call ceiling per request. The real local acceptance run reached draft and internal tool calls but not an external-tier tool call, so the endpoint is not evidence of complete three-agent delegation.
 - `GET /healthz` — local alias of `/status`; the same path is intercepted with 404 on the current Cloud Run route, for an unresolved platform-front-door reason.
 - `POST /triage` — fixture email triage with deterministic safety gates; requires an explicit batch of 1–2 `email_ids` and is globally limited to 10 requests per 10 minutes by default.
 - `GET /sessions/:id?user_id=<id>` — ADK session recovery.
@@ -150,11 +154,13 @@ Agent endpoints:
 proof is accepted only when these read `gemini-3.7-flash`, `vertex`, and
 `global`, followed by a successful real triage and matching cloud evidence.
 
-The active production triage path is one ADK `LlmAgent` in a `Runner`, forced to
-call `score_priority`. `agent/src/fleet.ts` separately constructs the three-tier
-`SequentialAgent` fleet and is covered by tests, but `createFleet()` is not yet
-called by `agent/src/server.ts`. Until that wiring exists, SecondKey does not
-claim that hosted triage delegates across three agents.
+The active production triage path remains one ADK `LlmAgent` in a `Runner`, forced
+to call `score_priority`; `/triage` was not changed for this fleet experiment.
+`agent/src/server.ts` now mounts the separate three-tier `SequentialAgent` at
+`POST /fleet/run`. In the original real local Gemini run, `draft_agent` and
+`internal_commit_agent` emitted allowed tool calls, while the external tier emitted
+none. Two instruction-only attempts still failed the three-agent acceptance test and
+were reverted. The route is real; complete three-agent delegation is not claimed.
 
 ### State and telemetry modes
 
@@ -223,7 +229,7 @@ gcloud run deploy secondkey-agent \
   --service-account secondkey-runner@YOUR_PROJECT_ID.iam.gserviceaccount.com \
   --allow-unauthenticated \
   --max-instances=1 \
-  --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,GEMINI_MODEL=gemini-3.7-flash,CONTEXTOPS_STATE_BACKEND=memory,CONTEXTOPS_TELEMETRY=gcp,CONTEXTOPS_UI_ORIGIN=https://secondkey.vcdw-io.workers.dev,CONTEXTOPS_TRIAGE_RATE_LIMIT=10,CONTEXTOPS_TRIAGE_RATE_WINDOW_MS=600000
+  --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,GEMINI_MODEL=gemini-3.7-flash,CONTEXTOPS_STATE_BACKEND=memory,CONTEXTOPS_TELEMETRY=gcp,CONTEXTOPS_UI_ORIGIN=https://secondkey.vcdw-io.workers.dev,CONTEXTOPS_TRIAGE_RATE_LIMIT=10,CONTEXTOPS_TRIAGE_RATE_WINDOW_MS=600000,CONTEXTOPS_FLEET_MAX_LLM_CALLS=15
 ```
 
 Cloud Run targets an Australia region; Gemini inference uses the Vertex AI
@@ -233,11 +239,12 @@ data residency. Keep the service private until its invocation
 policy is chosen, then verify `/status`, one real `/triage` request, and the
 corresponding Vertex/Cloud trace before wiring `NEXT_PUBLIC_AGENT_URL`.
 
-`--max-instances=1` limits scale, not request rate or spend. The submission adds a
-single-instance global rate window and a two-id batch cap so the public judge endpoint
-is bounded, but that in-memory control is not a production distributed gateway. Keep
-max instances at one, add quota/budget alerts, and remove public invocation after
-judging unless it becomes an explicit product requirement.
+`--max-instances=1` limits scale, not request rate or spend. The submission makes
+`/triage` and `/fleet/run` share a 10-request/10-minute single-instance window,
+retains the two-id triage batch cap, and limits one fleet request to 15 LLM calls.
+Those in-memory controls are not a production distributed gateway or hard budget.
+Keep max instances at one, add quota/budget alerts, and remove public invocation
+after judging unless it becomes an explicit product requirement.
 
 For a private service, verify with an identity token rather than making the
 cost-bearing triage endpoint public:

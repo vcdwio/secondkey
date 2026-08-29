@@ -148,7 +148,7 @@ test("triage endpoint enforces deterministic gates and emits retraceable audits"
   });
 });
 
-test("triage requires a bounded batch and rate-limits cost-bearing calls", async () => {
+test("cost-bearing endpoints share one rate limit after triage validates a bounded batch", async () => {
   await withServer(async (baseUrl) => {
     const missing = await fetch(`${baseUrl}/triage`, {
       method: "POST",
@@ -173,14 +173,23 @@ test("triage requires a bounded batch and rate-limits cost-bearing calls", async
     });
     assert.equal(first.status, 200);
 
-    const limited = await fetch(`${baseUrl}/triage`, {
+    const fleetLimited = await fetch(`${baseUrl}/fleet/run`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ account_id: "CL-BH", role: "Delivery Manager" }),
+    });
+    assert.equal(fleetLimited.status, 429);
+    assert.ok(Number(fleetLimited.headers.get("retry-after")) >= 1);
+    assert.equal((await fleetLimited.json() as { external_write: boolean }).external_write, false);
+
+    const triageLimited = await fetch(`${baseUrl}/triage`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ email_ids: ["EM-023"] }),
     });
-    assert.equal(limited.status, 429);
-    assert.ok(Number(limited.headers.get("retry-after")) >= 1);
-    assert.equal((await limited.json() as { external_write: boolean }).external_write, false);
+    assert.equal(triageLimited.status, 429);
+    assert.ok(Number(triageLimited.headers.get("retry-after")) >= 1);
+    assert.equal((await triageLimited.json() as { external_write: boolean }).external_write, false);
   }, {
     CONTEXTOPS_TRIAGE_RATE_LIMIT: "1",
     CONTEXTOPS_TRIAGE_RATE_WINDOW_MS: "60000",

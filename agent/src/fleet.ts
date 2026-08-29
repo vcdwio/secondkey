@@ -24,10 +24,20 @@
  * The product name is literal here: each agent holds a different key, and the
  * one that opens irreversible actions is not held by any of them.
  */
-import { LlmAgent, SequentialAgent, type BaseAgent } from "@google/adk";
+import {
+  LlmAgent,
+  Runner,
+  SecurityPlugin,
+  SequentialAgent,
+  getFunctionCalls,
+  type BaseAgent,
+} from "@google/adk";
 import { FunctionCallingConfigMode } from "@google/genai";
 
+import { ContextOpsPolicyEngine } from "./policy.js";
 import { DRAFT_TOOLS, EXTERNAL_TOOLS, INTERNAL_TOOLS } from "./tools.js";
+
+type RunnerServices = ConstructorParameters<typeof Runner>[0];
 
 /** Rules every tier inherits. Stated once so no tier can quietly drop one. */
 const FLEET_RULES = [
@@ -161,4 +171,120 @@ export function createFleet({ model }: { model: LlmAgent["model"] }): Fleet {
     externalAgent,
     tiers: FLEET_TIERS,
   };
+}
+
+/* ------------------------------------------------------------------ runtime */
+
+export interface FleetTurn {
+  agent: string;
+  toolCalls: { name: string; args: Record<string, unknown> }[];
+}
+
+export interface FleetRunResult {
+  coordinator: string;
+  account_id: string;
+  role: string;
+  turns: FleetTurn[];
+  delegation: { agent: string; tools: string[] }[];
+  external_write: false;
+}
+
+/**
+ * Run the fleet for real, and report which agent reached for which tool.
+ *
+ * `/fleet` publishes what the tiers are *allowed* to do; this executes them and
+ * reports what they actually did. That difference matters: a capability split
+ * nobody runs is a diagram, and the whole argument here is that the split is
+ * structural rather than described. The per-turn record is the evidence — an
+ * agent cannot appear next to a tool its tier was not constructed with.
+ */
+export function createFleetRuntime({
+  model,
+  services,
+  appName,
+  maxLlmCalls = 15,
+}: {
+  model: LlmAgent["model"];
+  services: { sessionService: RunnerServices["sessionService"]; memoryService: RunnerServices["memoryService"] };
+  appName: string;
+  maxLlmCalls?: number;
+}) {
+  const fleet = createFleet({ model });
+  const runner = new Runner({
+    appName,
+    agent: fleet.coordinator,
+    sessionService: services.sessionService,
+    memoryService: services.memoryService,
+    plugins: [new SecurityPlugin({ policyEngine: new ContextOpsPolicyEngine() })],
+  });
+
+  async function run({
+    accountId,
+    role,
+    userId,
+  }: {
+    accountId: string;
+    role: string;
+    userId: string;
+  }): Promise<FleetRunResult> {
+    const sessionId = `fleet-${accountId.toLowerCase()}-${Date.now()}`;
+    await services.sessionService.getOrCreateSession({
+      appName,
+      userId,
+      sessionId,
+      state: { external_write: false },
+    });
+
+    const turns: FleetTurn[] = [];
+    for await (const event of runner.runAsync({
+      userId,
+      sessionId,
+      stateDelta: { account_id: accountId, acting_role: role, external_write: false },
+      customMetadata: { task_id: accountId, external_write: false },
+      runConfig: { maxLlmCalls },
+      newMessage: {
+        role: "user",
+        parts: [
+          {
+            text: [
+              `Account: ${accountId}. Acting role: ${role}.`,
+              "Work this account through your tier only. Report exactly what your tools return.",
+            ].join(" "),
+          },
+        ],
+      },
+    })) {
+      if (event.errorCode || event.errorMessage) {
+        throw new Error(event.errorMessage || `Fleet model failed: ${event.errorCode}`);
+      }
+      const calls = getFunctionCalls(event);
+      if (!calls.length) continue;
+      const author = (event as { author?: string }).author ?? "unknown";
+      turns.push({
+        agent: author,
+        toolCalls: calls.map((call) => ({
+          name: call.name ?? "unknown",
+          args: (call.args ?? {}) as Record<string, unknown>,
+        })),
+      });
+    }
+
+    const byAgent = new Map<string, Set<string>>();
+    for (const turn of turns) {
+      const set = byAgent.get(turn.agent) ?? new Set<string>();
+      for (const call of turn.toolCalls) set.add(call.name);
+      byAgent.set(turn.agent, set);
+    }
+
+    return {
+      coordinator: fleet.coordinator.name,
+      account_id: accountId,
+      role,
+      turns,
+      delegation: [...byAgent].map(([agent, tools]) => ({ agent, tools: [...tools] })),
+      external_write: false,
+    };
+  }
+
+  return { fleet, runner, run };
 }

@@ -87,6 +87,20 @@ export function createScorePriorityTool() {
   });
 }
 
+/**
+ * One place that decides how the model is reached.
+ *
+ * Cloud Run runs on Vertex with the runtime service account's ADC and no key
+ * in the environment; local development uses a Gemini API key from an
+ * untracked .env. Both the triage runtime and the fleet runtime go through
+ * here so the two can never drift onto different backends.
+ */
+export function buildGeminiModel(access: GeminiAccess, model: string) {
+  return access.backend === "vertex"
+    ? new Gemini({ model, vertexai: true, project: access.project, location: access.location })
+    : new Gemini({ model, apiKey: access.apiKey });
+}
+
 export function createAdkTriageRuntime({
   access,
   model,
@@ -97,14 +111,7 @@ export function createAdkTriageRuntime({
   services: AgentServiceBundle;
 }) {
   const scorePriority = createScorePriorityTool();
-  const gemini = access.backend === "vertex"
-    ? new Gemini({
-        model,
-        vertexai: true,
-        project: access.project,
-        location: access.location,
-      })
-    : new Gemini({ model, apiKey: access.apiKey });
+  const gemini = buildGeminiModel(access, model);
   const rootAgent = new LlmAgent({
     name: "contextops_intake",
     model: gemini,
