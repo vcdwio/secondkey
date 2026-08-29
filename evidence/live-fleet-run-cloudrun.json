@@ -1,27 +1,140 @@
 {
-  "_captured": "Live POST /fleet/run against Cloud Run revision secondkey-agent-00005-h2f, Vertex AI backend, 2026-08-29T04:08:16Z",
+  "_captured": "Live POST /fleet/run against Cloud Run revision secondkey-agent-00006-mx7, Vertex AI backend, 2026-08-29T10:45:29Z",
   "_service": "https://secondkey-agent-689501174668.australia-southeast2.run.app",
   "_request": {
     "account_id": "CL-BH",
     "role": "Delivery Manager"
   },
   "_http": {
-    "status": 500,
+    "status": 200,
     "rate_limit": 10,
     "remaining_after_request": 9,
     "window_ms": 600000
   },
   "_cloud_log_observation": {
-    "vertex_provider_requests": 15,
+    "vertex_provider_requests": 7,
     "configured_max_llm_calls": 15,
-    "note": "The ADK guard refused the next model call before another provider request. No request body, credential or model output is included in this evidence."
+    "note": "Seven outbound Vertex requests were logged for this invocation. No request body, credential or raw model output is included in this observation."
   },
   "_acceptance": {
-    "passed": false,
-    "reason": "The request reached the per-run LLM-call ceiling before returning a three-agent delegation array. This is mounted-route and fail-closed evidence, not successful multi-agent delegation evidence."
+    "passed": true,
+    "reason": "The response contains all three fleet agents, observed business tool calls stay within each agent's constructor-supplied tool set, and external_write remains false.",
+    "protocol_note": "adk_request_confirmation is an ADK-generated confirmation protocol call, not a cross-tier business tool. It records that the external commitment remained paused for a named human."
   },
   "response": {
-    "external_write": false,
-    "error": "Agent request failed closed"
+    "coordinator": "secondkey_fleet",
+    "account_id": "CL-BH",
+    "role": "Delivery Manager",
+    "turns": [
+      {
+        "agent": "draft_agent",
+        "toolCalls": [
+          {
+            "name": "list_queue",
+            "args": {}
+          }
+        ]
+      },
+      {
+        "agent": "draft_agent",
+        "toolCalls": [
+          {
+            "name": "build_context_packet",
+            "args": {
+              "permissionGroups": [
+                "Delivery Manager",
+                "Enterprise"
+              ],
+              "id": "CL-BH",
+              "accessGroup": "Enterprise"
+            }
+          }
+        ]
+      },
+      {
+        "agent": "internal_commit_agent",
+        "toolCalls": [
+          {
+            "name": "commit_internal_change",
+            "args": {
+              "hoursAffected": 0,
+              "spendAud": 0,
+              "summary": "Internal scheduling and credential rotation tracking for BlueHarbor Logistics (CL-BH)",
+              "role": "Delivery Manager",
+              "accountsTouched": 1
+            }
+          }
+        ]
+      },
+      {
+        "agent": "external_commitment_agent",
+        "toolCalls": [
+          {
+            "name": "list_queue",
+            "args": {}
+          }
+        ]
+      },
+      {
+        "agent": "external_commitment_agent",
+        "toolCalls": [
+          {
+            "name": "release_external_commitment",
+            "args": {
+              "summary": "Release status update for executive preview (18 Aug 16:00), production launch (19 Aug 17:00), and credential rotation status.",
+              "accountId": "CL-BH",
+              "role": "Delivery Manager"
+            }
+          }
+        ]
+      },
+      {
+        "agent": "external_commitment_agent",
+        "toolCalls": [
+          {
+            "name": "adk_request_confirmation",
+            "args": {
+              "originalFunctionCall": {
+                "name": "release_external_commitment",
+                "args": {
+                  "summary": "Release status update for executive preview (18 Aug 16:00), production launch (19 Aug 17:00), and credential rotation status.",
+                  "accountId": "CL-BH",
+                  "role": "Delivery Manager"
+                },
+                "id": "call_571671"
+              },
+              "toolConfirmation": {
+                "hint": "Policy engine requires confirmation calling tool: release_external_commitment. Reason: Client-facing commitments are irreversible and always wait for a named human",
+                "confirmed": false
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "delegation": [
+      {
+        "agent": "draft_agent",
+        "tools": [
+          "list_queue",
+          "build_context_packet"
+        ]
+      },
+      {
+        "agent": "internal_commit_agent",
+        "tools": [
+          "commit_internal_change"
+        ]
+      },
+      {
+        "agent": "external_commitment_agent",
+        "tools": [
+          "list_queue",
+          "release_external_commitment",
+          "adk_request_confirmation"
+        ]
+      }
+    ],
+    "external_write": false
   }
 }

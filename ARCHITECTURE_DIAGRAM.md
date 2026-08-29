@@ -5,11 +5,10 @@
 ## Submission architecture
 
 Solid arrows are executed in the hosted submission. Dashed styling marks capabilities
-that are implemented but not fully verified. `/triage` remains the proven
-single-purpose intake path. A separate `/fleet/run` route now executes the three-agent
-coordinator, but a real local Gemini run did not produce tool calls from all three
-tiers after the permitted two instruction-only attempts. Mounting is verified;
-complete three-agent delegation is not.
+that are implemented but not fully verified. `/triage` remains the focused intake
+path. The separate `/fleet/run` route executed all three authority tiers on Vertex in
+revision `secondkey-agent-00006-mx7`, kept observed business calls inside each tier's
+constructor tool set, and stopped the external tier at ADK's human-confirmation step.
 
 ```mermaid
 flowchart TB
@@ -28,12 +27,12 @@ flowchart TB
 
     FLEET_ROUTE["ACTIVE /fleet/run<br/>ADK Runner · max 15 LLM calls/request"]
 
-    subgraph FLEET["MOUNTED + TESTED · three-tier completion unverified"]
+    subgraph FLEET["HOSTED + TESTED · three-tier Vertex run verified"]
       COORD["secondkey_fleet<br/>SequentialAgent"]
       DRAFT["draft_agent<br/>list_queue · build_context_packet<br/>humanGate: never"]
       INTERNAL["internal_commit_agent<br/>list_queue · commit_internal_change · rollback_changes<br/>humanGate: beyond role limits"]
       EXTERNAL["external_commitment_agent<br/>list_queue · release_external_commitment<br/>humanGate: always"]
-      CONSTRUCT["Construction boundary<br/>disjoint tools + allowedFunctionNames"]
+      CONSTRUCT["Construction boundary<br/>disjoint constructor tool arrays"]
       POLICY["ContextOpsPolicyEngine<br/>ALLOW · DENY · CONFIRM before execution"]
 
       COORD --> DRAFT --> INTERNAL --> EXTERNAL
@@ -68,7 +67,7 @@ flowchart TB
     class WEB,DATA,GATES,TRIAGE,FLEET_ROUTE,VAI,AUDIT,CR,SA,STATE,REG live
     class CORE,POLICY,CONSTRUCT deterministic
     class TRACE live
-    class COORD,DRAFT,INTERNAL,EXTERNAL prepared
+    class COORD,DRAFT,INTERNAL,EXTERNAL live
 ```
 
 Cloud Run executes in `australia-southeast2`; Gemini uses Vertex AI's `global`
@@ -96,7 +95,7 @@ sequenceDiagram
     participant H as Named human
     participant X as Simulated execution
 
-    Note over D,E: Construction boundary: disjoint tools + allowedFunctionNames
+    Note over D,E: Construction boundary: disjoint constructor tool arrays
     C->>D: list_queue / build_context_packet
     D->>P: permission-scoped context request
     alt access group missing
@@ -125,12 +124,13 @@ sequenceDiagram
     E->>X: produce held-for-human-send draft<br/>external_write remains false
 ```
 
-This fleet is real code with 15 targeted tests and a production route. The original
-real local run observed allowed calls from `draft_agent` and
-`internal_commit_agent`; `external_commitment_agent` was invoked by the sequential
-coordinator but emitted no tool call. Two instruction-only attempts did not improve
-that to all three agents and were reverted. The tool partition is structural and the
-route is mounted, but the response is not accepted as full delegation evidence.
+This fleet is real code with 15 targeted tests and a production route. Developer API
+quota prevented the final local acceptance run, so it was verified on hosted Vertex.
+Revision `secondkey-agent-00006-mx7` returned draft, internal and external agents in
+seven provider calls. Observed business tools stayed inside their disjoint constructor
+arrays. The external tier also emitted ADK's generated `adk_request_confirmation`
+protocol call with `confirmed:false`; that is the human gate, not a cross-tier business
+capability, and `external_write` remained false.
 
 ## Active governed paths
 
@@ -156,8 +156,8 @@ same definitions. This UI workflow is not an ADK long-running/resumable workflow
 | Requirement | Current evidence | Honest boundary |
 |---|---|---|
 | Gemini 3.5+ | Hosted `/status` reports `gemini-3.7-flash`, `vertex`, `global`; `evidence/live-triage-cloudrun.json` records a real model tool call | Model extracts; deterministic code decides |
-| Google Agent Framework | Production uses ADK `Runner`, `LlmAgent`, forced `FunctionTool`, in-memory Session/Memory services and `SecurityPlugin`; `/fleet/run` mounts a separate three-tier `SequentialAgent` | Real Gemini has not produced tool calls from all three tiers in one accepted run |
-| Google Cloud | Public Cloud Run revision `secondkey-agent-00005-h2f` in `australia-southeast2`; `/status`, `/fleet`, `/fleet/run` and `/triage` are reachable | `/fleet/run` currently fails closed at its 15-call ceiling; `/healthz` still returns an unresolved Google-front 404 |
+| Google Agent Framework | Production uses ADK `Runner`, `LlmAgent`, forced `FunctionTool`, in-memory Session/Memory services and `SecurityPlugin`; hosted `/fleet/run` completed a separate three-tier `SequentialAgent` execution | ADK generated an additional `adk_request_confirmation` protocol call for the external human gate; it is disclosed in the evidence |
+| Google Cloud | Public Cloud Run revision `secondkey-agent-00006-mx7` in `australia-southeast2`; `/status`, `/fleet`, `/fleet/run` and `/triage` are verified | `/healthz` still returns an unresolved Google-front 404; persistent state remains disabled |
 | Agent Registry | 10 generated local Unit contracts served by `/registry` | Cloud Agent Registry discovery disabled |
 | Agent Runtime | Active ADK request runtime | No long-running, asynchronous or cross-restart recovery proof |
 | Memory Bank | Vertex services selectable by configuration | Submission uses in-memory state; persistent path not enabled or live-verified |

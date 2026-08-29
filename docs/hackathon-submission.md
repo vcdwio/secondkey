@@ -6,12 +6,12 @@
 |---|---|---|
 | Real Gemini workflow | Verified on hosted Cloud Run | `/status` reports `gemini-3.7-flash`, `vertex`, `global`; `evidence/live-triage-cloudrun.json` records a real `score_priority` call |
 | Google ADK execution | Verified, single-agent active path | Production invokes ADK `Runner`, `LlmAgent`, forced `FunctionTool`, in-memory Session/Memory services and `SecurityPlugin` |
-| Three-agent fleet | Mounted separately; full live delegation not verified | `/fleet/run` executes the coordinator, but the original local Gemini run emitted tool calls from only draft and internal; two prompt-only attempts still missed all-three acceptance |
+| Three-agent fleet | Verified on hosted Vertex | Revision `secondkey-agent-00006-mx7` returned all three agents in seven provider calls; observed business tools stayed within each tier and the external action stopped at ADK's human-confirmation protocol |
 | Deterministic business decisions | Implemented | priority, identity, authorization, capacity, spend and approval functions; the model only extracts |
 | State and memory | Local in-memory verified; Vertex prepared | `CONTEXTOPS_STATE_BACKEND=memory`; no cross-restart or multi-week proof |
 | Discovery and lifecycle | Local registry verified; Cloud query disabled | ten generated Unit entries; `CONTEXTOPS_CLOUD_REGISTRY=false` |
 | Telemetry | Verified locally and in Cloud Trace | final revision produced two `contextops.audit.Intake___Triage` spans; redacted evidence committed |
-| Hosted Cloud Run URL | Verified | revision `secondkey-agent-00005-h2f` serves 100% in `australia-southeast2`; `/status`, `/fleet`, `/registry`, `/audit.*` and `/triage` respond; `/fleet/run` is mounted but fails closed at its 15-call ceiling |
+| Hosted Cloud Run URL | Verified | revision `secondkey-agent-00006-mx7` serves 100% in `australia-southeast2`; `/status`, `/fleet`, `/registry`, `/audit.*`, `/triage` and `/fleet/run` respond; fleet evidence is committed at `evidence/live-fleet-run-cloudrun.json` |
 | `/healthz` | Known exception | local alias works; Cloud Run front door returns 404, so published checks use `/status` |
 | Hosted frontend URL | Verified interactive demo + backend status probe | `/` cover and `/app` work; current build shows `ready · writes disabled` after cross-origin `/status`; the Monday scenario itself remains deterministic in-browser |
 | Tests | Verified locally | 87 total: 36 root (31 core + 5 rendered HTTP), 51 agent |
@@ -50,21 +50,23 @@ model-processing or data-residency claim is made.
    rule, decision trace, idempotency keys and rollback.
 6. **3:25–3:50 — Google Cloud proof.** Show Cloud Run service/region/URL, `/status`,
    Vertex model evidence and the verified Cloud Trace spans.
-7. **3:50–4:00 — Honest close.** 87 tests; fleet endpoint mounted but three-tier live
-   delegation still unverified; persistent
-   memory, cloud identity/gateway and Model Armor not implemented in the submission.
+7. **3:50–4:00 — Honest close.** 87 tests; hosted three-tier delegation verified with
+   the external action held for human confirmation; persistent memory, cloud
+   identity/gateway, failure recovery and Model Armor are not implemented.
 
-Do not present `/fleet` metadata or a partial `/fleet/run` response as proof of live
-multi-agent delegation. The endpoint is mounted, but only an execution whose
-`delegation` contains all three agents with their own tools meets that claim.
+Use the revision `secondkey-agent-00006-mx7` `/fleet/run` response as the live
+multi-agent proof: its `delegation` contains all three agents and their observed
+business calls stay inside the constructor tool partitions. Disclose that
+`adk_request_confirmation` is an additional ADK-generated confirmation protocol call,
+not a fourth business capability, and that failure recovery is still not implemented.
 
 ## Deployment proof to capture
 
 - Cloud Run service name, `australia-southeast2`, current revision and `.run.app` URL.
 - `GET /status` with `external_write:false`, `model_backend:"vertex"`, model and location.
-- `GET /fleet` with the three agents and their exact tools/human gates, explicitly
-  labelled as construction evidence; `/fleet/run` only as mounted-route evidence
-  unless all three agents appear in the returned delegation.
+- `GET /fleet` with the three agents and their exact constructor tools/human gates;
+  revision `secondkey-agent-00006-mx7` `/fleet/run` with all three observed agents,
+  the ADK confirmation protocol call and `external_write:false`.
 - Real `/triage` response for EM-001 and EM-023.
 - Matching `contextops.audit.Intake___Triage` spans for EM-001/QUEUED and
   EM-023/QUARANTINE from revision `secondkey-agent-00004-7vb`.

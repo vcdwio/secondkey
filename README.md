@@ -22,20 +22,20 @@ curl -sX POST https://secondkey-agent-689501174668.australia-southeast2.run.app/
   -d '{"email_ids":["EM-001","EM-023"]}'
 ```
 
-The fleet command above was verified on revision `secondkey-agent-00005-h2f`.
-It reached the configured 15-LLM-call ceiling and failed closed instead of returning
-an incomplete delegation as success:
+The fleet command above was verified on revision `secondkey-agent-00006-mx7`.
+It returned HTTP 200 after seven Vertex requests, delegated work through all three
+agents, and kept external writes disabled:
 
 ```json
-{"external_write":false,"error":"Agent request failed closed"}
+{"delegation":[{"agent":"draft_agent","tools":["list_queue","build_context_packet"]},{"agent":"internal_commit_agent","tools":["commit_internal_change"]},{"agent":"external_commitment_agent","tools":["list_queue","release_external_commitment","adk_request_confirmation"]}],"external_write":false}
 ```
 
 The response carried `X-RateLimit-Limit: 10` and `X-RateLimit-Remaining: 9`.
-Cloud logs showed exactly 15 Vertex provider requests before the ADK limit refused
-the next call. The redacted evidence is
+Observed business tool calls stayed within each agent's constructor-supplied tool
+set. `adk_request_confirmation` is the ADK-generated confirmation protocol call,
+not a cross-tier business tool; it records that the external commitment remained
+paused for a named human. The redacted evidence is
 [`evidence/live-fleet-run-cloudrun.json`](evidence/live-fleet-run-cloudrun.json).
-This proves the route is deployed and the guard fails closed; it does **not** prove
-successful three-agent delegation.
 
 The verified triage response is stored at
 [`evidence/live-triage-cloudrun.json`](evidence/live-triage-cloudrun.json). Its
@@ -94,7 +94,7 @@ is committed at [`evidence/cloud-trace-after-flush.json`](evidence/cloud-trace-a
 - Value case with editable assumptions, and a go-live checklist for Live.
 - Full audit trail with actor and evidence on every event, exportable as JSON.
 - Google ADK `Runner`, `FunctionTool`, `SecurityPlugin`, Session Service, Memory Service, Agent Registry query adapter, and OpenTelemetry audit spans.
-- A mounted and unit-tested authority-partitioned fleet: draft, reversible internal commit, and always-confirmed external commitment tiers with disjoint tools. `POST /fleet/run` executes its coordinator; `/fleet` exposes construction metadata. Real local Gemini verification did not complete all three tool-calling tiers, so this submission does not claim successful three-agent delegation.
+- A hosted, unit-tested authority-partitioned fleet: draft, reversible internal commit, and always-confirmed external commitment tiers with disjoint constructor tool sets. `POST /fleet/run` completed all three tiers on Vertex while preserving `external_write:false`; the external tier stopped at ADK's human-confirmation protocol.
 - Optimistic capacity reservations: approval moves the visible state from lock v1 to reserved v2; rollback releases it at v3.
 - Input/output map and API/MCP readiness matrix.
 - Validated fictional Verge data pack: 10 staff, 7 clients, 30 emails, 25 Eval scenarios.
@@ -158,7 +158,7 @@ Agent endpoints:
 
 - `GET /status` — runtime, state backend, model, registry count, telemetry mode.
 - `GET /fleet` — the three constructed fleet tiers, exact tool sets, write reach and human-gate policy.
-- `POST /fleet/run` — runs the separate `secondkey_fleet` coordinator and reports observed tool calls by agent. It shares the public cost window with `/triage` and has a 15-LLM-call ceiling per request. The real local acceptance run reached draft and internal tool calls but not an external-tier tool call, so the endpoint is not evidence of complete three-agent delegation.
+- `POST /fleet/run` — runs the separate `secondkey_fleet` coordinator and reports observed tool calls by agent. It shares the public cost window with `/triage` and has a 15-LLM-call ceiling per request. Hosted Vertex verification completed all three tiers in seven provider calls; the external tier returned ADK's generated confirmation request and made no external write.
 - `GET /healthz` — local alias of `/status`; the same path is intercepted with 404 on the current Cloud Run route, for an unresolved platform-front-door reason.
 - `POST /triage` — fixture email triage with deterministic safety gates; requires an explicit batch of 1–2 `email_ids` and is globally limited to 10 requests per 10 minutes by default.
 - `GET /sessions/:id?user_id=<id>` — ADK session recovery.
@@ -171,11 +171,12 @@ proof is accepted only when these read `gemini-3.7-flash`, `vertex`, and
 
 The active production triage path remains one ADK `LlmAgent` in a `Runner`, forced
 to call `score_priority`; `/triage` was not changed for this fleet experiment.
-`agent/src/server.ts` now mounts the separate three-tier `SequentialAgent` at
-`POST /fleet/run`. In the original real local Gemini run, `draft_agent` and
-`internal_commit_agent` emitted allowed tool calls, while the external tier emitted
-none. Two instruction-only attempts still failed the three-agent acceptance test and
-were reverted. The route is real; complete three-agent delegation is not claimed.
+`agent/src/server.ts` mounts the separate three-tier `SequentialAgent` at
+`POST /fleet/run`. Developer API quota prevented the final local run, so acceptance
+was performed on the deployed Vertex path. Revision `secondkey-agent-00006-mx7`
+returned all three agents after seven provider calls. Their business calls stayed
+within the disjoint `tools` arrays, and the external tier stopped at the ADK-generated
+`adk_request_confirmation` step with `confirmed:false` and `external_write:false`.
 
 ### State and telemetry modes
 

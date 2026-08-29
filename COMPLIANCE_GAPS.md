@@ -9,7 +9,7 @@ current source/deployed endpoints. Status means evidence, not aspiration.
 |---|---|---|---|
 | 1 | Gemini 3.5+ through Gemini API or Vertex AI | **Met** | Hosted `/status` reports `gemini-3.7-flash`, `model_backend:vertex`, `model_location:global`; `evidence/live-triage-cloudrun.json` records a real hosted tool call |
 | 2 | At least one Google agent framework | **Met** | Active `/triage` constructs and invokes ADK `Runner`, `LlmAgent`, forced `FunctionTool`, Session/Memory services and `SecurityPlugin` in `agent/src/adk.ts` |
-| 3 | At least one Google Cloud infrastructure service | **Met** | Public Cloud Run revision `secondkey-agent-00005-h2f` serves 100% of traffic in `australia-southeast2`; `/status`, `/fleet` and `/triage` respond, while the mounted `/fleet/run` fails closed at its 15-call ceiling |
+| 3 | At least one Google Cloud infrastructure service | **Met** | Public Cloud Run revision `secondkey-agent-00006-mx7` serves 100% of traffic in `australia-southeast2`; `/status`, `/fleet`, `/triage` and `/fleet/run` respond, and the fleet completed in seven Vertex provider calls |
 
 These three baseline technology requirements are met. This does not by itself prove
 the selected track's multi-agent judging criterion.
@@ -30,24 +30,26 @@ the selected track's multi-agent judging criterion.
 
 The business workflow is complex enough for multiple specialized agents, and
 `agent/src/fleet.ts` constructs three authority-partitioned agents with disjoint tools,
-`allowedFunctionNames`, and an independent policy layer. Fifteen tests prove its
-construction, mounted route, LLM-call ceiling and DENY/CONFIRM behavior.
+plus an independent policy layer. Fifteen tests prove its construction, mounted route,
+LLM-call ceiling and DENY/CONFIRM behavior. The constructor `tools` arrays are the
+capability boundary; unsupported tools are not declared to that tier.
 
 The hosted `/triage` Runner remains one `contextops_intake` `LlmAgent`; a separate
-`POST /fleet/run` now executes `secondkey_fleet`. The original real local Gemini run
-emitted allowed calls from draft and internal but no external-tier tool call. Two
-instruction-only attempts still did not produce an accepted all-three delegation and
-were reverted. Therefore:
+`POST /fleet/run` executes `secondkey_fleet`. Revision `secondkey-agent-00006-mx7`
+returned draft, internal and external agents after seven Vertex calls. Observed
+business tools stayed within their constructor partitions, while the external tier
+stopped at ADK's generated `adk_request_confirmation` with `confirmed:false`.
+Therefore:
 
-- **Live multi-agent delegation: endpoint mounted, acceptance not met.**
+- **Live multi-agent delegation: implemented and hosted-verified.**
 - **Failure-tolerant inter-agent routing/recovery: not implemented.**
 - **“Unlikely Hero” criterion: weak.** The target operator is a consulting-firm
   General Manager, which is a standard corporate role.
 
-This remains the highest submission risk because the official Fortified criterion asks
-whether the system intelligently delegates to specialized sub-agents. Do not use the
-architecture diagram, `/fleet` metadata or partial `/fleet/run` output to imply that
-the all-three-agent behavior has been demonstrated.
+The main remaining Fortified gap is recovery: the system demonstrates specialized
+delegation and a human confirmation boundary, but does not reroute around a failed tier
+or resume a paused workflow after a process restart. The evidence also discloses ADK's
+generated confirmation protocol call rather than presenting it as a business tool.
 
 ## 4. Submission-rule compliance
 
@@ -68,11 +70,10 @@ SecondKey/ADK/cloud work built during the period.
 
 ## 5. Highest-return actions before recording
 
-1. **P0 — Make the mounted fleet complete one accepted delegation.** Use a supported
-   ADK workflow or coordinator with explicit termination/handoff semantics, prove the
-   three agents execute, and add failure recovery. The existing `SequentialAgent`
-   emits an ADK deprecation warning, so do not deepen that dependency without checking
-   the supported migration.
+1. **P0 — Add and prove failure recovery after submission.** The hosted three-tier run
+   is now verified, but there is no reroute/resume behavior. The existing
+   `SequentialAgent` emits an ADK deprecation warning, so check the supported migration
+   before deepening that dependency.
 2. **P0 — Finish protecting public cost-bearing routes.** The shared rate window,
    triage two-id cap and fleet 15-call ceiling are implemented; add quota/budget alerts
    and remove public invoker after judging.

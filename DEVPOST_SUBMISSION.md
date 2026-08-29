@@ -93,13 +93,14 @@ and duplicate handling run before the model is called.
 
 We also constructed, mounted and unit-tested `secondkey_fleet`, a `SequentialAgent` with three
 authority-partitioned `LlmAgent` tiers: draft-only, reversible internal commit, and
-always-confirmed external commitment. Their tool sets and `allowedFunctionNames` do
-not overlap, and `ContextOpsPolicyEngine` independently returns ALLOW, DENY or CONFIRM
-before execution. `/fleet` exposes the partition and `POST /fleet/run` executes the
-separate coordinator. In real local Gemini verification, the original run emitted
-allowed calls from the draft and internal tiers but no external-tier tool call. Two
-instruction-only attempts still did not complete all three tiers, so we reverted them
-and do not claim successful three-agent delegation.
+always-confirmed external commitment. Each agent receives a disjoint constructor
+`tools` array, while `ContextOpsPolicyEngine` independently returns ALLOW, DENY or
+CONFIRM before execution. `/fleet` exposes the partition and `POST /fleet/run` executes
+the separate coordinator. Hosted Vertex verification on revision
+`secondkey-agent-00006-mx7` completed all three tiers in seven provider calls. Observed
+business calls stayed within their assigned tiers; the external tier then emitted
+ADK's generated `adk_request_confirmation` protocol call with `confirmed:false`, and
+the response remained `external_write:false`.
 
 The hosted configuration reaches Vertex AI through the Cloud Run runtime service
 account's Application Default Credentials, so no Gemini key is injected into the
@@ -140,14 +141,14 @@ we have not verified end to end.
 - **Google ADK for TypeScript** (`@google/adk` v2) — the live path uses `Runner`, one
   focused `LlmAgent`, one forced `FunctionTool`, in-memory session/memory services and
   `SecurityPlugin`; a separate three-`LlmAgent` `SequentialAgent` is mounted at
-  `/fleet/run`, but has not passed the all-three-agents live acceptance test
-- **Google Cloud Run** — public revision `secondkey-agent-00005-h2f` in
-  `australia-southeast2`; `/status`, `/fleet`, `/registry` and `/triage` return
-  successful responses. `/fleet/run` is mounted but currently reaches its 15-call
-  ceiling and returns a sanitized fail-closed 500, so it is not counted as successful
-  multi-agent evidence. Model inference uses Vertex's `global` endpoint, so we make no
-  claim about where inference or data resides. `/healthz` remains an isolated
-  unresolved 404 and is not the published health endpoint.
+  `/fleet/run` and completed all three tiers in a hosted Vertex run; ADK's generated
+  confirmation protocol kept the irreversible external commitment pending
+- **Google Cloud Run** — public revision `secondkey-agent-00006-mx7` in
+  `australia-southeast2`; `/status`, `/fleet`, `/registry`, `/triage` and `/fleet/run`
+  return successful responses. The fleet run used seven of its 15-call ceiling and
+  returned `external_write:false`. Model inference uses Vertex's `global` endpoint,
+  so we make no claim about where inference or data resides. `/healthz` remains an
+  isolated unresolved 404 and is not the published health endpoint.
 - **Vertex AI Session Service and Memory Bank** — wired behind
   `CONTEXTOPS_STATE_BACKEND`, so cross-session context switches on with one variable
   and a provisioned Agent Engine id. The submitted build ships with in-memory state;
@@ -202,11 +203,12 @@ first question anyone asks is "seven clients, four available people — how did 
 Writing the real solver, and asserting that its output still reproduces the pack's
 twelve hours, was the change that made the decision defensible.
 
-**Forced tool loops are not delegation.** The fleet pins each tier to its own tools
-with ADK `ANY` function-calling mode. The real model sometimes repeated one tier's
-tools instead of handing useful work through all three. We limited each request to 15
-LLM calls, made model-error events fail closed, and reported the incomplete run rather
-than counting the mounted route as multi-agent proof.
+**Forced tool loops are not delegation.** ADK `ANY` mode forced every turn to call a
+function, so a tier could not finish with text and hand over; combining AUTO with
+`allowedFunctionNames` was rejected by the API. We removed that invalid/redundant
+pair and kept the real isolation boundary: the disjoint `tools` arrays passed to each
+agent, backed by tests and the policy engine. Hosted Vertex then completed all three
+tiers in seven calls. The 15-call ceiling and fail-closed model-error path remain.
 
 **Platform-bound dependencies.** Native bindings (`rolldown`, `esbuild`) ship per
 platform, so a `node_modules` tree copied between macOS and Linux fails in ways that
