@@ -196,6 +196,32 @@ test("cost-bearing endpoints share one rate limit after triage validates a bound
   });
 });
 
+test("default public allowance lets judges complete 60 valid probes before throttling", async () => {
+  await withServer(async (baseUrl) => {
+    for (let requestNumber = 1; requestNumber <= 60; requestNumber += 1) {
+      const response = await fetch(`${baseUrl}/triage`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email_ids: ["EM-023"] }),
+      });
+      assert.equal(response.status, 200, `request ${requestNumber} should be allowed`);
+      assert.equal(response.headers.get("x-ratelimit-limit"), "60");
+      assert.equal(
+        response.headers.get("x-ratelimit-remaining"),
+        String(60 - requestNumber),
+      );
+    }
+
+    const throttled = await fetch(`${baseUrl}/triage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email_ids: ["EM-023"] }),
+    });
+    assert.equal(throttled.status, 429);
+    assert.equal(throttled.headers.get("x-ratelimit-limit"), "60");
+  });
+});
+
 test("session endpoint reads the configured ADK session service", async () => {
   await withServer(async (baseUrl, services) => {
     await services.sessionService.createSession({

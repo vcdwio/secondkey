@@ -122,8 +122,8 @@ npm run lint
 npx tsc --noEmit
 ```
 
-The current verified total is **87 tests**: 36 in the root suite (31 core + 5
-rendered HTTP checks) and 51 in `agent/`.
+The current verified total is **88 tests**: 36 in the root suite (31 core + 5
+rendered HTTP checks) and 52 in `agent/`.
 
 Validate the fixture pack independently:
 
@@ -160,7 +160,7 @@ Agent endpoints:
 - `GET /fleet` — the three constructed fleet tiers, exact tool sets, write reach and human-gate policy.
 - `POST /fleet/run` — runs the separate `secondkey_fleet` coordinator and reports observed tool calls by agent. It shares the public cost window with `/triage` and has a 15-LLM-call ceiling per request. Hosted Vertex verification completed all three tiers in seven provider calls; the external tier returned ADK's generated confirmation request and made no external write.
 - `GET /healthz` — local alias of `/status`; the same path is intercepted with 404 on the current Cloud Run route, for an unresolved platform-front-door reason.
-- `POST /triage` — fixture email triage with deterministic safety gates; requires an explicit batch of 1–2 `email_ids` and is globally limited to 10 requests per 10 minutes by default.
+- `POST /triage` — fixture email triage with deterministic safety gates; requires an explicit batch of 1–2 `email_ids` and shares a global 60-request-per-10-minute public demo window with `/fleet/run` by default.
 - `GET /sessions/:id?user_id=<id>` — ADK session recovery.
 - `GET /registry` — synchronized ten-Unit registry plus an explicitly enabled Cloud discovery count.
 - `GET /audit.json` and `GET /audit.csv` — write-disabled compliance exports.
@@ -245,7 +245,7 @@ gcloud run deploy secondkey-agent \
   --service-account secondkey-runner@YOUR_PROJECT_ID.iam.gserviceaccount.com \
   --allow-unauthenticated \
   --max-instances=1 \
-  --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,GEMINI_MODEL=gemini-3.7-flash,CONTEXTOPS_STATE_BACKEND=memory,CONTEXTOPS_TELEMETRY=gcp,CONTEXTOPS_UI_ORIGIN=https://secondkey.vcdw-io.workers.dev,CONTEXTOPS_TRIAGE_RATE_LIMIT=10,CONTEXTOPS_TRIAGE_RATE_WINDOW_MS=600000,CONTEXTOPS_FLEET_MAX_LLM_CALLS=15
+  --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,GEMINI_MODEL=gemini-3.7-flash,CONTEXTOPS_STATE_BACKEND=memory,CONTEXTOPS_TELEMETRY=gcp,CONTEXTOPS_UI_ORIGIN=https://secondkey.vcdw-io.workers.dev,CONTEXTOPS_TRIAGE_RATE_LIMIT=60,CONTEXTOPS_TRIAGE_RATE_WINDOW_MS=600000,CONTEXTOPS_FLEET_MAX_LLM_CALLS=15
 ```
 
 Cloud Run targets an Australia region; Gemini inference uses the Vertex AI

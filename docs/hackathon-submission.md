@@ -14,7 +14,7 @@
 | Hosted Cloud Run URL | Verified | revision `secondkey-agent-00006-mx7` serves 100% in `australia-southeast2`; `/status`, `/fleet`, `/registry`, `/audit.*`, `/triage` and `/fleet/run` respond; fleet evidence is committed at `evidence/live-fleet-run-cloudrun.json` |
 | `/healthz` | Known exception | local alias works; Cloud Run front door returns 404, so published checks use `/status` |
 | Hosted frontend URL | Verified interactive demo + backend status probe | `/` cover and `/app` work; current build shows `ready · writes disabled` after cross-origin `/status`; the Monday scenario itself remains deterministic in-browser |
-| Tests | Verified locally | 87 total: 36 root (31 core + 5 rendered HTTP), 51 agent |
+| Tests | Verified locally | 88 total: 36 root (31 core + 5 rendered HTTP), 52 agent |
 
 Cloud Run executes in `australia-southeast2`, while Gemini 3.7 Flash inference uses
 Vertex AI's `global` endpoint through runtime service-account ADC. No Australian
@@ -50,7 +50,7 @@ model-processing or data-residency claim is made.
    rule, decision trace, idempotency keys and rollback.
 6. **3:25–3:50 — Google Cloud proof.** Show Cloud Run service/region/URL, `/status`,
    Vertex model evidence and the verified Cloud Trace spans.
-7. **3:50–4:00 — Honest close.** 87 tests; hosted three-tier delegation verified with
+7. **3:50–4:00 — Honest close.** 88 tests; hosted three-tier delegation verified with
    the external action held for human confirmation; persistent memory, cloud
    identity/gateway, failure recovery and Model Armor are not implemented.
 

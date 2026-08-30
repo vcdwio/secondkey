@@ -161,7 +161,7 @@ we have not verified end to end.
   The final Cloud Run request produced two verified
   `contextops.audit.Intake___Triage` spans for the queued and quarantined emails.
 - **TypeScript / React / Vite** — the operator control room, six views
-- **Node test runner and ESLint** — 87 automated tests (36 root + 51 agent) and zero lint errors. A prior
+- **Node test runner and ESLint** — 88 automated tests (36 root + 52 agent) and zero lint errors. A prior
   axe-core audit recorded zero WCAG 2.1 AA violations across seven surfaces.
 
 ---
@@ -225,7 +225,7 @@ look like code errors. Costly to diagnose the first time; now documented in
   cross-account reach, plus a pre-execution ADK policy check for protected tool calls.
 - Rollback that admits its own limits: nine changes restore cleanly, and the two that
   cannot be undone are labelled as such rather than pretended away.
-- 87 automated tests (36 root + 51 agent), zero lint errors, a prior seven-surface axe audit with zero
+- 88 automated tests (36 root + 52 agent), zero lint errors, a prior seven-surface axe audit with zero
   violations, and a body-text floor of 12px — the governance story is legible on a
   projector, which is where it actually has to work.
 

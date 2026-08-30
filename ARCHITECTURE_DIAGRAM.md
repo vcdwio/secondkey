@@ -168,11 +168,11 @@ same definitions. This UI workflow is not an ADK long-running/resumable workflow
 
 ## Verification baseline
 
-- 87 automated tests: 36 root (31 core + 5 rendered HTTP) and 51 agent.
+- 88 automated tests: 36 root (31 core + 5 rendered HTTP) and 52 agent.
 - No live connectors or external writes.
 - No production identities or customer data; all email addresses use `.example`.
 - Cloud discovery and Vertex persistence remain disabled.
-- Public `/triage` requires 1–2 ids; `/triage` and `/fleet/run` share 10 requests per
+- Public `/triage` requires 1–2 ids; `/triage` and `/fleet/run` share 60 requests per
   10-minute in-memory global window, and one fleet run is capped at 15 LLM calls.
   Max instances must stay at one. This is a demo guard, not production authentication
   or a hard billing cap.

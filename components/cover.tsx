@@ -24,10 +24,16 @@ export function Cover() {
           <span>SecondKey</span>
         </div>
         {/* People look top-right for the way in. Give them a door there too,
-            so the cover never reads as the whole of the thing. */}
-        <a className="cover-toplink" href="/app">
-          Open the demo <span aria-hidden="true">→</span>
-        </a>
+            so the cover never reads as the whole of the thing. The second link
+            is for the reader who would rather check than be shown. */}
+        <nav className="cover-toplinks">
+          <a className="cover-toplink ghost" href="/try">
+            Try it yourself
+          </a>
+          <a className="cover-toplink" href="/app">
+            Open the demo <span aria-hidden="true">→</span>
+          </a>
+        </nav>
       </header>
 
       <div className="cover-main">
