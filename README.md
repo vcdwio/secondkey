@@ -30,7 +30,11 @@ agents, and kept external writes disabled:
 {"delegation":[{"agent":"draft_agent","tools":["list_queue","build_context_packet"]},{"agent":"internal_commit_agent","tools":["commit_internal_change"]},{"agent":"external_commitment_agent","tools":["list_queue","release_external_commitment","adk_request_confirmation"]}],"external_write":false}
 ```
 
-The response carried `X-RateLimit-Limit: 10` and `X-RateLimit-Remaining: 9`.
+That archived fleet response carried `X-RateLimit-Limit: 10`; it predates the
+judging-window allowance change. Current revision `secondkey-agent-00007-nlt`
+returns `X-RateLimit-Limit: 60` from the shared `/triage` + `/fleet/run` window.
+The current redacted acceptance record is
+[`evidence/live-rate-limit-cloudrun.json`](evidence/live-rate-limit-cloudrun.json).
 Observed business tool calls stayed within each agent's constructor-supplied tool
 set. `adk_request_confirmation` is the ADK-generated confirmation protocol call,
 not a cross-tier business tool; it records that the external commitment remained

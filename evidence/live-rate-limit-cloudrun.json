@@ -1,0 +1,34 @@
+{
+  "_captured": "Live verification against Cloud Run revision secondkey-agent-00007-nlt, 2026-08-30T02:47:22Z",
+  "_service": "https://secondkey-agent-689501174668.australia-southeast2.run.app",
+  "_request": {
+    "method": "POST",
+    "path": "/triage",
+    "origin": "https://secondkey.vcdw-io.workers.dev",
+    "body": { "email_ids": ["EM-023"] }
+  },
+  "_http": {
+    "status": 200,
+    "access_control_allow_origin": "https://secondkey.vcdw-io.workers.dev",
+    "rate_limit": 60,
+    "remaining_after_request": 59,
+    "window_ms": 600000
+  },
+  "status": {
+    "external_write": false,
+    "runtime": "google-adk",
+    "state_backend": "memory",
+    "model": "gemini-3.7-flash",
+    "model_backend": "vertex",
+    "model_location": "global",
+    "telemetry_mode": "gcp"
+  },
+  "triage_result": {
+    "email_id": "EM-023",
+    "outcome": "quarantine",
+    "priority": null,
+    "tool_call": null,
+    "external_write": false
+  },
+  "_note": "EM-023 is stopped by the deterministic pre-model injection gate, so this acceptance probe does not consume a Gemini model call."
+}
